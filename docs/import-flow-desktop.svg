@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" width="1280" height="400">
+  <defs>
+    <style>
+      .text-primary { fill: #212121; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .text-secondary { fill: #757575; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .text-inverse { fill: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .label { fill: #757575; font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 11px; }
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#424242"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="400" fill="#F5F5F5"/>
+
+  <text x="32" y="40" class="text-primary" font-size="20" font-weight="700">Import Flow</text>
+  <text x="32" y="64" class="text-secondary" font-size="13">Two-phase .env import: preview then confirm</text>
+
+  <!-- ==================== PHASE 1 ==================== -->
+  <g transform="translate(32, 96)">
+    <rect width="560" height="28" rx="4" fill="#424242"/>
+    <text x="16" y="19" class="text-inverse" font-size="12" font-weight="600">PHASE 1 — PREVIEW</text>
+    <text x="430" y="19" class="label" fill="#BDBDBD">POST /api/vaults/:name/import</text>
+  </g>
+
+  <!-- .env file → Parser → Preview -->
+  <g transform="translate(32, 140)">
+    <!-- .env file -->
+    <rect width="180" height="80" rx="6" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1.5"/>
+    <text x="16" y="22" class="text-secondary" font-size="12" font-weight="500">Upload .env file</text>
+    <text x="16" y="44" class="label">DB_URL=postgres://...</text>
+    <text x="16" y="58" class="label">API_KEY=sk-abc123...</text>
+    <text x="16" y="72" class="label"># comments handled</text>
+
+    <!-- Arrow -->
+    <line x1="180" y1="40" x2="212" y2="40" stroke="#424242" stroke-width="1.5" marker-end="url(#a)"/>
+
+    <!-- Parser -->
+    <g transform="translate(214, 0)">
+      <rect width="160" height="80" rx="6" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1.5"/>
+      <text x="16" y="22" class="text-secondary" font-size="12" font-weight="500">Parser</text>
+      <text x="16" y="42" class="label">Quotes, escapes</text>
+      <text x="16" y="56" class="label">CRLF, BOM, dupes</text>
+      <text x="16" y="70" class="label">Key-value extraction</text>
+    </g>
+
+    <!-- Arrow -->
+    <line x1="374" y1="40" x2="406" y2="40" stroke="#424242" stroke-width="1.5" marker-end="url(#a)"/>
+
+    <!-- Preview response -->
+    <g transform="translate(408, 0)">
+      <rect width="152" height="80" rx="6" fill="#FFFFFF" stroke="#424242" stroke-width="2"/>
+      <text x="16" y="22" class="text-primary" font-size="12" font-weight="600">Preview</text>
+      <rect x="16" y="32" width="52" height="18" rx="4" fill="#2E7D32" opacity="0.15"/>
+      <text x="42" y="45" text-anchor="middle" fill="#2E7D32" font-family="'SF Mono', monospace" font-size="9" font-weight="600">3 new</text>
+      <rect x="76" y="32" width="60" height="18" rx="4" fill="#E65100" opacity="0.15"/>
+      <text x="106" y="45" text-anchor="middle" fill="#E65100" font-family="'SF Mono', monospace" font-size="9" font-weight="600">1 updated</text>
+      <text x="16" y="70" class="label">importId: "abc-123"</text>
+    </g>
+  </g>
+
+  <!-- ==================== importId link ==================== -->
+  <g transform="translate(620, 180)">
+    <line x1="0" y1="0" x2="40" y2="0" stroke="#BDBDBD" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="48" y="4" class="label">importId links</text>
+    <text x="48" y="18" class="label">phase 1 → 2</text>
+    <line x1="108" y1="8" x2="148" y2="8" stroke="#BDBDBD" stroke-width="1" stroke-dasharray="3,2"/>
+  </g>
+
+  <!-- ==================== PHASE 2 ==================== -->
+  <g transform="translate(688, 96)">
+    <rect width="560" height="28" rx="4" fill="#424242"/>
+    <text x="16" y="19" class="text-inverse" font-size="12" font-weight="600">PHASE 2 — CONFIRM</text>
+    <text x="382" y="19" class="label" fill="#BDBDBD">POST /api/vaults/:name/import/confirm</text>
+  </g>
+
+  <g transform="translate(688, 140)">
+    <!-- User confirms -->
+    <rect width="160" height="80" rx="6" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1.5"/>
+    <text x="16" y="22" class="text-secondary" font-size="12" font-weight="500">User confirms</text>
+    <text x="16" y="44" class="label">Reviews preview diff</text>
+    <text x="16" y="58" class="label">Sends importId</text>
+
+    <!-- Arrow -->
+    <line x1="160" y1="40" x2="192" y2="40" stroke="#424242" stroke-width="1.5" marker-end="url(#a)"/>
+
+    <!-- Merge -->
+    <g transform="translate(194, 0)">
+      <rect width="180" height="80" rx="6" fill="#FFFFFF" stroke="#424242" stroke-width="2"/>
+      <text x="16" y="22" class="text-primary" font-size="12" font-weight="600">Additive Merge</text>
+      <text x="16" y="44" class="label">✓ Create new secrets</text>
+      <text x="16" y="58" class="label">✓ Update existing values</text>
+      <text x="16" y="72" class="label">✗ Never deletes</text>
+    </g>
+
+    <!-- Arrow -->
+    <line x1="374" y1="40" x2="406" y2="40" stroke="#424242" stroke-width="1.5" marker-end="url(#a)"/>
+
+    <!-- Result -->
+    <g transform="translate(408, 8)">
+      <rect width="152" height="64" rx="6" fill="#2E7D32" opacity="0.1"/>
+      <rect width="152" height="64" rx="6" fill="none" stroke="#2E7D32" stroke-width="1.5"/>
+      <text x="76" y="28" text-anchor="middle" fill="#2E7D32" font-size="12" font-weight="600" font-family="-apple-system, sans-serif">Encrypted</text>
+      <text x="76" y="48" text-anchor="middle" fill="#2E7D32" font-size="12" font-weight="600" font-family="-apple-system, sans-serif">and Stored</text>
+    </g>
+  </g>
+
+  <!-- ==================== PARSING DETAILS ==================== -->
+  <g transform="translate(32, 280)">
+    <rect width="1216" height="80" rx="8" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1"/>
+    <text x="20" y="24" class="text-secondary" font-size="12" font-weight="500">Parser handles edge cases</text>
+    <g transform="translate(20, 38)">
+      <rect width="100" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="50" y="16" text-anchor="middle" class="label">Comments (#)</text>
+      <rect x="112" y="0" width="120" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="172" y="16" text-anchor="middle" class="label">Quoted values</text>
+      <rect x="244" y="0" width="130" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="309" y="16" text-anchor="middle" class="label">Escape sequences</text>
+      <rect x="386" y="0" width="80" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="426" y="16" text-anchor="middle" class="label">CRLF/LF</text>
+      <rect x="478" y="0" width="90" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="523" y="16" text-anchor="middle" class="label">BOM stripping</text>
+      <rect x="580" y="0" width="110" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="635" y="16" text-anchor="middle" class="label">Duplicate keys</text>
+      <rect x="702" y="0" width="110" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="757" y="16" text-anchor="middle" class="label">Empty values</text>
+    </g>
+  </g>
+</svg>

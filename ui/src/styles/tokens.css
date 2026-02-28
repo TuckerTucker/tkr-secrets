@@ -1,0 +1,120 @@
+/* Design Tokens — generated from docs/DESIGN-TOKENS.md */
+
+:root {
+  /* Surface & Background */
+  --color-bg-page: #F5F5F5;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-surface-raised: #FFFFFF;
+  --color-bg-surface-hover: #F0F0F0;
+  --color-bg-surface-active: #E8E8E8;
+
+  /* Text */
+  --color-text-primary: #212121;
+  --color-text-secondary: #757575;
+  --color-text-disabled: #BDBDBD;
+  --color-text-inverse: #FFFFFF;
+
+  /* Border & Divider */
+  --color-border-default: #E0E0E0;
+  --color-border-strong: #424242;
+  --color-border-focus: #1565C0;
+
+  /* Interactive */
+  --color-drag-handle: #BDBDBD;
+  --color-drag-handle-group: #757575;
+
+  /* Status */
+  --color-status-success: #2E7D32;
+  --color-status-info: #1565C0;
+  --color-status-warning: #E65100;
+  --color-status-error: #B71C1C;
+
+  /* Status Backgrounds */
+  --color-status-success-bg: #E8F5E9;
+  --color-status-info-bg: #E3F2FD;
+  --color-status-warning-bg: #FFF3E0;
+  --color-status-error-bg: #FFEBEE;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Typography */
+  --font-family: system-ui, -apple-system, sans-serif;
+  --font-family-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* Transitions */
+  --transition-fast: 100ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+[data-theme="dark"] {
+  /* Surface & Background */
+  --color-bg-page: #121212;
+  --color-bg-surface: #1E1E1E;
+  --color-bg-surface-raised: #252525;
+  --color-bg-surface-hover: #2A2A2A;
+  --color-bg-surface-active: #333333;
+
+  /* Text */
+  --color-text-primary: #E0E0E0;
+  --color-text-secondary: #9E9E9E;
+  --color-text-disabled: #616161;
+  --color-text-inverse: #121212;
+
+  /* Border & Divider */
+  --color-border-default: #333333;
+  --color-border-strong: #757575;
+  --color-border-focus: #42A5F5;
+
+  /* Interactive */
+  --color-drag-handle: #616161;
+  --color-drag-handle-group: #9E9E9E;
+
+  /* Status */
+  --color-status-success: #4CAF50;
+  --color-status-info: #42A5F5;
+  --color-status-warning: #FF9100;
+  --color-status-error: #EF5350;
+
+  /* Status Backgrounds */
+  --color-status-success-bg: #1B3A1B;
+  --color-status-info-bg: #0D2744;
+  --color-status-warning-bg: #3E2200;
+  --color-status-error-bg: #3E1111;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+}

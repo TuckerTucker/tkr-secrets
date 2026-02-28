@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 700" width="375" height="700">
+  <defs>
+    <style>
+      .text-primary { fill: #212121; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .text-secondary { fill: #757575; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .text-inverse { fill: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .text-mono { fill: #757575; font-family: 'SF Mono', Monaco, Consolas, monospace; }
+      .label { fill: #757575; font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 10px; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#424242"/>
+    </marker>
+    <marker id="arrow-secondary" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#BDBDBD"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="375" height="700" fill="#F5F5F5"/>
+
+  <!-- Title -->
+  <text x="16" y="36" class="text-primary" font-size="17" font-weight="700">Architecture Overview</text>
+  <text x="16" y="56" class="text-secondary" font-size="12">Three-tier design with file system persistence</text>
+
+  <!-- ==================== BROWSER UI LAYER ==================== -->
+  <g transform="translate(16, 80)">
+    <rect width="260" height="130" rx="8" fill="#FFFFFF" stroke="#424242" stroke-width="2"/>
+    <text x="130" y="24" text-anchor="middle" class="text-primary" font-size="13" font-weight="600">Browser UI</text>
+    <line x1="16" y1="36" x2="244" y2="36" stroke="#E0E0E0" stroke-width="1"/>
+    <text x="16" y="56" class="text-secondary" font-size="11">Vanilla TypeScript SPA</text>
+    <text x="16" y="72" class="text-secondary" font-size="11">History API routing</text>
+    <text x="16" y="88" class="text-secondary" font-size="11">CSS custom properties (theming)</text>
+    <text x="16" y="108" class="label">ui/src/</text>
+    <text x="16" y="120" class="label">screens/ components/ router.ts api.ts</text>
+  </g>
+
+  <!-- Arrow: UI → API -->
+  <line x1="146" y1="210" x2="146" y2="258" stroke="#424242" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="154" y="238" class="label">fetch()</text>
+
+  <!-- ==================== HTTP API LAYER ==================== -->
+  <g transform="translate(16, 260)">
+    <rect width="260" height="130" rx="8" fill="#FFFFFF" stroke="#424242" stroke-width="2"/>
+    <text x="130" y="24" text-anchor="middle" class="text-primary" font-size="13" font-weight="600">HTTP API</text>
+    <line x1="16" y1="36" x2="244" y2="36" stroke="#E0E0E0" stroke-width="1"/>
+    <text x="16" y="56" class="text-secondary" font-size="11">Bun.serve() on port 3000</text>
+    <text x="16" y="72" class="text-secondary" font-size="11">REST endpoints under /api/vaults</text>
+    <text x="16" y="88" class="text-secondary" font-size="11">JSON envelope { success, data }</text>
+    <text x="16" y="108" class="label">src/http/vault-router.ts</text>
+    <text x="16" y="120" class="label">serve.ts (dev server)</text>
+  </g>
+
+  <!-- Arrow: API → Core -->
+  <line x1="146" y1="390" x2="146" y2="438" stroke="#424242" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="154" y="418" class="label">method calls</text>
+
+  <!-- ==================== CRYPTO CORE LAYER ==================== -->
+  <g transform="translate(16, 440)">
+    <rect width="260" height="150" rx="8" fill="#FFFFFF" stroke="#424242" stroke-width="2"/>
+    <text x="130" y="24" text-anchor="middle" class="text-primary" font-size="13" font-weight="600">Crypto Core</text>
+    <line x1="16" y1="36" x2="244" y2="36" stroke="#E0E0E0" stroke-width="1"/>
+    <text x="16" y="56" class="text-secondary" font-size="11">AES-256-GCM encryption</text>
+    <text x="16" y="72" class="text-secondary" font-size="11">Scrypt KDF (cost 16384)</text>
+    <text x="16" y="88" class="text-secondary" font-size="11">Key wrapping / unwrapping</text>
+    <text x="16" y="104" class="text-secondary" font-size="11">Atomic file writes (tmp + rename)</text>
+    <text x="16" y="124" class="label">crypto.ts store.ts vault-manager.ts</text>
+    <text x="16" y="136" class="label">recovery.ts groups.ts import.ts</text>
+  </g>
+
+  <!-- ==================== FILE SYSTEM ==================== -->
+  <g transform="translate(296, 470)">
+    <rect width="63" height="90" rx="6" fill="#FFFFFF" stroke="#BDBDBD" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="32" y="20" text-anchor="middle" class="text-secondary" font-size="11" font-weight="500">File</text>
+    <text x="32" y="34" text-anchor="middle" class="text-secondary" font-size="11" font-weight="500">System</text>
+    <line x1="8" y1="44" x2="55" y2="44" stroke="#E0E0E0" stroke-width="1"/>
+    <text x="32" y="60" text-anchor="middle" class="label">.vault</text>
+    <text x="32" y="74" text-anchor="middle" class="label">.pass</text>
+  </g>
+
+  <!-- Arrow: Core → File System -->
+  <line x1="276" y1="515" x2="294" y2="515" stroke="#BDBDBD" stroke-width="1.5" marker-end="url(#arrow-secondary)"/>
+
+  <!-- Legend -->
+  <g transform="translate(16, 660)">
+    <line x1="0" y1="0" x2="20" y2="0" stroke="#424242" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="28" y="4" class="label">Data flow</text>
+    <line x1="100" y1="0" x2="120" y2="0" stroke="#BDBDBD" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-secondary)"/>
+    <text x="128" y="4" class="label">Persistence</text>
+  </g>
+</svg>

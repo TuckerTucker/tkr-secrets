@@ -1,0 +1,25 @@
+{
+  "name": "tkr-secrets",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --hot serve.ts",
+    "build": "bun run build:lib && bun run build:ui",
+    "build:lib": "bun build src/index.ts --outdir dist/lib --target bun --sourcemap",
+    "build:ui": "bun build ui/src/main.ts --outdir dist/ui --minify --sourcemap && cp ui/index.html dist/ui/ && cp -r ui/src/styles dist/ui/",
+    "typecheck": "bunx tsc --noEmit && bunx tsc --noEmit --strict --target ES2022 --module ES2022 --moduleResolution bundler --lib ES2022,DOM,DOM.Iterable --skipLibCheck ui/src/main.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "bip39": "^3.1.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.9",
+    "@types/qrcode": "^1.5.6",
+    "typescript": "^5.9.3"
+  }
+}

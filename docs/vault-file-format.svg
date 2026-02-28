@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 780" width="375" height="780">
+  <defs>
+    <style>
+      .text-primary { fill: #212121; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .text-secondary { fill: #757575; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .text-inverse { fill: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .label { fill: #757575; font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 10px; }
+      .mono { font-family: 'SF Mono', Monaco, Consolas, monospace; }
+    </style>
+  </defs>
+
+  <rect width="375" height="780" fill="#F5F5F5"/>
+
+  <text x="16" y="36" class="text-primary" font-size="17" font-weight="700">Vault File Format</text>
+  <text x="16" y="56" class="text-secondary" font-size="12">Version 2 — JSON structure with annotations</text>
+
+  <!-- Main JSON container -->
+  <g transform="translate(16, 76)">
+    <rect width="343" height="660" rx="8" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1.5"/>
+
+    <!-- Opening brace -->
+    <text x="16" y="28" class="text-primary mono" font-size="12">{</text>
+
+    <!-- version -->
+    <g transform="translate(24, 40)">
+      <text x="0" y="14" class="text-primary mono" font-size="11">"version": 2,</text>
+      <rect x="180" y="2" width="76" height="18" rx="9" fill="#E0E0E0"/>
+      <text x="218" y="14" text-anchor="middle" class="text-secondary mono" font-size="9">plaintext</text>
+    </g>
+
+    <!-- salt -->
+    <g transform="translate(24, 68)">
+      <text x="0" y="14" class="text-primary mono" font-size="11">"salt": "a3f1...c8d2",</text>
+      <rect x="180" y="2" width="76" height="18" rx="9" fill="#E0E0E0"/>
+      <text x="218" y="14" text-anchor="middle" class="text-secondary mono" font-size="9">plaintext</text>
+      <text x="0" y="30" class="label">64-char hex (32 random bytes)</text>
+    </g>
+
+    <!-- Divider: encrypted keys section -->
+    <line x1="16" y1="112" x2="327" y2="112" stroke="#E0E0E0" stroke-width="1" stroke-dasharray="4,2"/>
+
+    <!-- passwordWrappedKey -->
+    <g transform="translate(24, 120)">
+      <text x="0" y="14" class="text-primary mono" font-size="11">"passwordWrappedKey": "...",</text>
+      <rect x="224" y="2" width="80" height="18" rx="9" fill="#2E7D32" opacity="0.2"/>
+      <rect x="224" y="2" width="80" height="18" rx="9" fill="none" stroke="#2E7D32" stroke-width="1"/>
+      <text x="264" y="14" text-anchor="middle" fill="#2E7D32" class="mono" font-size="9">encrypted</text>
+      <text x="0" y="30" class="label">AES-256-GCM(PK, VK)</text>
+    </g>
+
+    <!-- recoveryWrappedKey -->
+    <g transform="translate(24, 162)">
+      <text x="0" y="14" class="text-primary mono" font-size="11">"recoveryWrappedKey": "...",</text>
+      <rect x="224" y="2" width="80" height="18" rx="9" fill="#1565C0" opacity="0.2"/>
+      <rect x="224" y="2" width="80" height="18" rx="9" fill="none" stroke="#1565C0" stroke-width="1"/>
+      <text x="264" y="14" text-anchor="middle" fill="#1565C0" class="mono" font-size="9">encrypted</text>
+      <text x="0" y="30" class="label">AES-256-GCM(RK, VK)</text>
+    </g>
+
+    <!-- Divider: metadata section -->
+    <line x1="16" y1="210" x2="327" y2="210" stroke="#E0E0E0" stroke-width="1" stroke-dasharray="4,2"/>
+
+    <!-- groups -->
+    <g transform="translate(24, 218)">
+      <text x="0" y="14" class="text-primary mono" font-size="11">"groups": {</text>
+      <rect x="180" y="2" width="76" height="18" rx="9" fill="#E0E0E0"/>
+      <text x="218" y="14" text-anchor="middle" class="text-secondary mono" font-size="9">plaintext</text>
+      <text x="16" y="34" class="text-secondary mono" font-size="10">"uuid-1": { "name": "AWS", "order": 0 },</text>
+      <text x="16" y="50" class="text-secondary mono" font-size="10">"uuid-2": { "name": "DB", "order": 1 }</text>
+      <text x="0" y="66" class="text-primary mono" font-size="11">},</text>
+      <text x="60" y="66" class="label">Group metadata (names visible while locked)</text>
+    </g>
+
+    <!-- order -->
+    <g transform="translate(24, 300)">
+      <text x="0" y="14" class="text-primary mono" font-size="11">"order": ["API_KEY", "DB_URL", ...],</text>
+      <rect x="252" y="2" width="52" height="18" rx="9" fill="#E0E0E0"/>
+      <text x="278" y="14" text-anchor="middle" class="text-secondary mono" font-size="9">plain</text>
+      <text x="0" y="30" class="label">Display order (key names visible)</text>
+    </g>
+
+    <!-- secretGroups -->
+    <g transform="translate(24, 346)">
+      <text x="0" y="14" class="text-primary mono" font-size="11">"secretGroups": {</text>
+      <rect x="180" y="2" width="76" height="18" rx="9" fill="#E0E0E0"/>
+      <text x="218" y="14" text-anchor="middle" class="text-secondary mono" font-size="9">plaintext</text>
+      <text x="16" y="34" class="text-secondary mono" font-size="10">"API_KEY": "uuid-1",</text>
+      <text x="16" y="50" class="text-secondary mono" font-size="10">"DB_URL": "uuid-2"</text>
+      <text x="0" y="66" class="text-primary mono" font-size="11">},</text>
+    </g>
+
+    <!-- Divider: encrypted secrets -->
+    <line x1="16" y1="428" x2="327" y2="428" stroke="#E0E0E0" stroke-width="1" stroke-dasharray="4,2"/>
+
+    <!-- secrets -->
+    <g transform="translate(24, 436)">
+      <text x="0" y="14" class="text-primary mono" font-size="11">"secrets": {</text>
+      <rect x="180" y="2" width="80" height="18" rx="9" fill="#B71C1C" opacity="0.15"/>
+      <rect x="180" y="2" width="80" height="18" rx="9" fill="none" stroke="#B71C1C" stroke-width="1"/>
+      <text x="220" y="14" text-anchor="middle" fill="#B71C1C" class="mono" font-size="9">encrypted</text>
+      <text x="16" y="36" class="text-secondary mono" font-size="10">"API_KEY": "iv:ciphertext:tag",</text>
+      <text x="16" y="52" class="text-secondary mono" font-size="10">"DB_URL": "iv:ciphertext:tag"</text>
+      <text x="0" y="68" class="text-primary mono" font-size="11">}</text>
+      <text x="0" y="86" class="label">Values encrypted with VK via AES-256-GCM</text>
+      <text x="0" y="100" class="label">Keys visible — only values are encrypted</text>
+    </g>
+
+    <!-- Closing brace -->
+    <text x="16" y="552" class="text-primary mono" font-size="12">}</text>
+
+    <!-- Summary annotations -->
+    <g transform="translate(16, 572)">
+      <line x1="0" y1="0" x2="311" y2="0" stroke="#E0E0E0" stroke-width="1"/>
+      <text x="0" y="20" class="text-secondary" font-size="11" font-weight="500">What's visible when locked:</text>
+      <text x="0" y="36" class="label">version, salt, group names, secret key names, display order</text>
+      <text x="0" y="56" class="text-secondary" font-size="11" font-weight="500">What requires unlock (VK):</text>
+      <text x="0" y="72" class="label">Secret values (the actual sensitive data)</text>
+    </g>
+  </g>
+</svg>

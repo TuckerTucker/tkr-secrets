@@ -1,0 +1,24 @@
+# Claude Code
+.claude
+
+# Build output
+dist
+
+# Dependencies
+node_modules
+
+# Project-specific
+wireframes
+CLAUDE.local.md
+spec-docs 
+
+# OS files
+.DS_Store
+
+# Vault data
+.data
+
+# Editor
+*.swp
+*.swo
+*~

@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 520" width="1280" height="520">
+  <defs>
+    <style>
+      .text-primary { fill: #212121; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .text-secondary { fill: #757575; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .text-inverse { fill: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .label { fill: #757575; font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 11px; }
+      .mono { font-family: 'SF Mono', Monaco, Consolas, monospace; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="520" fill="#F5F5F5"/>
+
+  <text x="32" y="40" class="text-primary" font-size="20" font-weight="700">Vault File Format</text>
+  <text x="32" y="64" class="text-secondary" font-size="13">Version 2 — JSON structure with security annotations</text>
+
+  <!-- ==================== LEFT: JSON STRUCTURE ==================== -->
+  <g transform="translate(32, 96)">
+    <rect width="600" height="400" rx="8" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1.5"/>
+
+    <text x="20" y="30" class="text-primary mono" font-size="13">{</text>
+
+    <!-- version + salt -->
+    <text x="32" y="56" class="text-primary mono" font-size="12">"version": 2,</text>
+    <text x="32" y="78" class="text-primary mono" font-size="12">"salt": "a3f1...c8d2",</text>
+    <text x="320" y="78" class="label">← 64-char hex (32 random bytes)</text>
+
+    <line x1="20" y1="92" x2="580" y2="92" stroke="#E0E0E0" stroke-width="1" stroke-dasharray="4,2"/>
+
+    <!-- wrapped keys -->
+    <text x="32" y="116" class="text-primary mono" font-size="12">"passwordWrappedKey": "iv:ct:tag...",</text>
+    <rect x="370" y="104" width="80" height="18" rx="9" fill="#2E7D32" opacity="0.2"/>
+    <rect x="370" y="104" width="80" height="18" rx="9" fill="none" stroke="#2E7D32" stroke-width="1"/>
+    <text x="410" y="116" text-anchor="middle" fill="#2E7D32" class="mono" font-size="10">encrypted</text>
+
+    <text x="32" y="140" class="text-primary mono" font-size="12">"recoveryWrappedKey": "iv:ct:tag...",</text>
+    <rect x="370" y="128" width="80" height="18" rx="9" fill="#1565C0" opacity="0.2"/>
+    <rect x="370" y="128" width="80" height="18" rx="9" fill="none" stroke="#1565C0" stroke-width="1"/>
+    <text x="410" y="140" text-anchor="middle" fill="#1565C0" class="mono" font-size="10">encrypted</text>
+
+    <line x1="20" y1="154" x2="580" y2="154" stroke="#E0E0E0" stroke-width="1" stroke-dasharray="4,2"/>
+
+    <!-- groups -->
+    <text x="32" y="178" class="text-primary mono" font-size="12">"groups": {</text>
+    <text x="48" y="200" class="text-secondary mono" font-size="11">"uuid-1": { "name": "AWS Credentials", "order": 0 },</text>
+    <text x="48" y="220" class="text-secondary mono" font-size="11">"uuid-2": { "name": "Database", "order": 1 }</text>
+    <text x="32" y="240" class="text-primary mono" font-size="12">},</text>
+
+    <!-- order -->
+    <text x="32" y="266" class="text-primary mono" font-size="12">"order": ["API_KEY", "DB_URL", "SECRET_TOKEN"],</text>
+
+    <!-- secretGroups -->
+    <text x="32" y="292" class="text-primary mono" font-size="12">"secretGroups": {</text>
+    <text x="48" y="312" class="text-secondary mono" font-size="11">"API_KEY": "uuid-1", "DB_URL": "uuid-2"</text>
+    <text x="32" y="332" class="text-primary mono" font-size="12">},</text>
+
+    <line x1="20" y1="346" x2="580" y2="346" stroke="#E0E0E0" stroke-width="1" stroke-dasharray="4,2"/>
+
+    <!-- secrets -->
+    <text x="32" y="370" class="text-primary mono" font-size="12">"secrets": {</text>
+    <rect x="370" y="358" width="80" height="18" rx="9" fill="#B71C1C" opacity="0.15"/>
+    <rect x="370" y="358" width="80" height="18" rx="9" fill="none" stroke="#B71C1C" stroke-width="1"/>
+    <text x="410" y="370" text-anchor="middle" fill="#B71C1C" class="mono" font-size="10">encrypted</text>
+
+    <text x="48" y="392" class="text-secondary mono" font-size="11">"API_KEY": "3a9f...:7bc2...:e1d4...",  // iv:ciphertext:tag</text>
+    <text x="32" y="412" class="text-primary mono" font-size="12">}</text>
+
+    <text x="20" y="434" class="text-primary mono" font-size="13">}</text>
+  </g>
+
+  <!-- ==================== RIGHT: ANNOTATIONS ==================== -->
+  <g transform="translate(672, 96)">
+    <!-- Plaintext metadata -->
+    <rect width="576" height="160" rx="8" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1.5"/>
+    <rect width="576" height="32" rx="8" fill="#E0E0E0"/>
+    <rect y="16" width="576" height="16" fill="#E0E0E0"/>
+    <text x="20" y="22" class="text-primary" font-size="13" font-weight="600">Plaintext Metadata (visible when locked)</text>
+
+    <text x="20" y="56" class="text-secondary" font-size="12">These fields are readable without unlocking the vault:</text>
+
+    <g transform="translate(20, 72)">
+      <rect width="100" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="50" y="16" text-anchor="middle" class="label">version</text>
+      <rect x="112" y="0" width="60" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="142" y="16" text-anchor="middle" class="label">salt</text>
+      <rect x="184" y="0" width="80" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="224" y="16" text-anchor="middle" class="label">groups</text>
+      <rect x="276" y="0" width="60" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="306" y="16" text-anchor="middle" class="label">order</text>
+      <rect x="348" y="0" width="110" height="24" rx="4" fill="#F5F5F5"/>
+      <text x="403" y="16" text-anchor="middle" class="label">secretGroups</text>
+    </g>
+
+    <text x="20" y="120" class="text-secondary" font-size="12">Secret key names are visible (for listing)</text>
+    <text x="20" y="140" class="text-secondary" font-size="12">Group names and organization are visible</text>
+  </g>
+
+  <!-- Encrypted data -->
+  <g transform="translate(672, 276)">
+    <rect width="576" height="140" rx="8" fill="#FFFFFF" stroke="#B71C1C" stroke-width="1.5"/>
+    <rect width="576" height="32" rx="8" fill="#B71C1C" opacity="0.15"/>
+    <rect y="16" width="576" height="16" fill="#B71C1C" opacity="0.15"/>
+    <text x="20" y="22" fill="#B71C1C" font-size="13" font-weight="600" font-family="-apple-system, sans-serif">Encrypted Data (requires VK)</text>
+
+    <text x="20" y="60" class="text-secondary" font-size="12">Secret values — the actual sensitive data:</text>
+    <text x="20" y="82" class="label">Each value: AES-256-GCM(VK, plaintext) → iv:ciphertext:authTag</text>
+    <text x="20" y="100" class="label">Unique IV per secret per write (never reused)</text>
+    <text x="20" y="120" class="label">Auth tag prevents tampering (AEAD)</text>
+  </g>
+
+  <!-- Key wrapping -->
+  <g transform="translate(672, 436)">
+    <rect width="576" height="60" rx="8" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1.5"/>
+    <text x="20" y="24" class="text-secondary" font-size="12" font-weight="500">Wrapped Keys — accessing the VK</text>
+    <rect x="20" y="34" width="160" height="18" rx="4" fill="#2E7D32" opacity="0.15"/>
+    <text x="100" y="47" text-anchor="middle" fill="#2E7D32" class="mono" font-size="10">passwordWrappedKey → PK unwraps VK</text>
+    <rect x="200" y="34" width="160" height="18" rx="4" fill="#1565C0" opacity="0.15"/>
+    <text x="280" y="47" text-anchor="middle" fill="#1565C0" class="mono" font-size="10">recoveryWrappedKey → RK unwraps VK</text>
+  </g>
+</svg>
