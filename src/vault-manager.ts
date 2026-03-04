@@ -6,9 +6,10 @@
  */
 
 import { join } from 'node:path';
-import { existsSync, unlinkSync } from 'node:fs';
+import { existsSync, readdirSync, unlinkSync } from 'node:fs';
 import type { Logger } from './types.js';
 import { SecretsStore } from './store.js';
+import type { KeychainProvider } from './keychain.js';
 
 /** Regex for valid vault names: lowercase letter followed by lowercase alphanumeric or hyphens. */
 const VAULT_NAME_RE = /^[a-z][a-z0-9-]*$/;
@@ -27,6 +28,10 @@ export interface VaultManagerDeps {
   readonly autoLockMs: number;
   /** Structured logger instance. */
   readonly logger: Logger;
+  /** Optional keychain provider for auto-unlock on macOS. */
+  readonly keychain?: KeychainProvider;
+  /** Keychain service name (e.g., 'tkr-secrets'). */
+  readonly keychainService?: string;
 }
 
 /** Summary metadata for a registered vault. */
@@ -68,11 +73,15 @@ export class VaultManager {
   private readonly vaultsDir: string;
   private readonly autoLockMs: number;
   private readonly logger: Logger;
+  private readonly keychain?: KeychainProvider;
+  private readonly keychainService?: string;
 
   constructor(deps: VaultManagerDeps) {
     this.vaultsDir = deps.vaultsDir;
     this.autoLockMs = deps.autoLockMs;
     this.logger = deps.logger.child({ component: 'vault-manager' });
+    this.keychain = deps.keychain;
+    this.keychainService = deps.keychainService;
   }
 
   /**
@@ -128,6 +137,9 @@ export class VaultManager {
       filePath,
       autoLockMs: this.autoLockMs,
       logger: this.logger,
+      keychain: this.keychain,
+      keychainService: this.keychainService,
+      keychainAccount: name,
     });
 
     const recoveryKey = await store.init(password);
@@ -170,6 +182,59 @@ export class VaultManager {
 
     this.vaults.delete(name);
     this.logger.info({ vault: name }, 'vault deleted');
+  }
+
+  /**
+   * Scans the vaults directory for existing vault files and registers them.
+   *
+   * Vault files follow the naming convention `secrets-{name}.enc.json`.
+   * Already-registered vaults are skipped.
+   */
+  scanAndRegister(): void {
+    if (!existsSync(this.vaultsDir)) return;
+
+    const files = readdirSync(this.vaultsDir);
+    const pattern = /^secrets-([a-z][a-z0-9-]*)\.enc\.json$/;
+
+    for (const file of files) {
+      const match = pattern.exec(file);
+      if (!match) continue;
+
+      const name = match[1];
+      if (this.vaults.has(name)) continue;
+
+      const store = new SecretsStore({
+        filePath: join(this.vaultsDir, file),
+        autoLockMs: this.autoLockMs,
+        logger: this.logger,
+        keychain: this.keychain,
+        keychainService: this.keychainService,
+        keychainAccount: name,
+      });
+
+      this.vaults.set(name, store);
+      this.logger.info({ vault: name }, 'vault discovered on disk');
+    }
+  }
+
+  /**
+   * Attempts auto-unlock on all registered vaults via keychain or env var.
+   *
+   * @returns Number of vaults that were auto-unlocked.
+   */
+  async tryAutoUnlockAll(): Promise<number> {
+    let count = 0;
+    for (const [name, store] of this.vaults) {
+      try {
+        if (await store.tryAutoUnlock()) {
+          this.logger.info({ vault: name }, 'vault auto-unlocked');
+          count++;
+        }
+      } catch (err) {
+        this.logger.warn({ vault: name, err }, 'auto-unlock failed');
+      }
+    }
+    return count;
   }
 
   /**

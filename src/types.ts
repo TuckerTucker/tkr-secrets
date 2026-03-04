@@ -31,6 +31,8 @@ export interface SecretsStatus {
   readonly fileExists: boolean;
   readonly unlocked: boolean;
   readonly timeoutRemaining?: number;
+  readonly keychainAvailable: boolean;
+  readonly stayAuthenticated: boolean;
 }
 
 /** Mapping from a stored secret to a process environment variable. */

@@ -11,7 +11,9 @@
     "build:lib": "bun build src/index.ts --outdir dist/lib --target bun --sourcemap",
     "build:ui": "bun build ui/src/main.ts --outdir dist/ui --minify --sourcemap && cp ui/index.html dist/ui/ && cp -r ui/src/styles dist/ui/",
     "typecheck": "bunx tsc --noEmit && bunx tsc --noEmit --strict --target ES2022 --module ES2022 --moduleResolution bundler --lib ES2022,DOM,DOM.Iterable --skipLibCheck ui/src/main.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "test:integration": "bun test src/__tests__/integration/",
+    "test:e2e": "bun test src/__tests__/e2e/"
   },
   "dependencies": {
     "bip39": "^3.1.0",

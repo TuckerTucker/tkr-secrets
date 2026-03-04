@@ -42,6 +42,7 @@ export class SecretsStore {
   private recoveryWrappedKey: string | null = null;
   private lockTimer: ReturnType<typeof setTimeout> | null = null;
   private unlockedAt: number | null = null;
+  private persistSession = false;
 
   constructor(deps: SecretsStoreDeps) {
     this.filePath = deps.filePath;
@@ -94,9 +95,10 @@ export class SecretsStore {
    * Derives the password key, unwraps the vault key, then decrypts all secrets.
    *
    * @param password - Master password.
+   * @param stayAuthenticated - If true, saves VK to keychain for auto-unlock.
    * @throws Error if the password is incorrect or the file is missing.
    */
-  async unlock(password: string): Promise<void> {
+  async unlock(password: string, stayAuthenticated = false): Promise<void> {
     const data = await this.readFile();
     if (!data) {
       throw new Error('secrets file not found — use init() first');
@@ -131,11 +133,15 @@ export class SecretsStore {
     this.order = [...data.order];
     this.secretGroups = new Map(Object.entries(data.secretGroups));
     this.unlockedAt = Date.now();
+    this.persistSession = stayAuthenticated;
     this.resetLockTimer();
     this.logger.info({ count: this.secrets.size }, 'secrets store unlocked');
 
-    // Save VK to keychain for auto-unlock on next boot
-    await this.saveToKeychain(vk);
+    if (stayAuthenticated) {
+      await this.saveToKeychain(vk);
+    } else {
+      await this.removeFromKeychain();
+    }
   }
 
   /**
@@ -169,6 +175,7 @@ export class SecretsStore {
           this.groups = new Map(Object.entries(data.groups));
           this.order = [...data.order];
           this.secretGroups = new Map(Object.entries(data.secretGroups));
+          this.persistSession = true;
           this.unlockedAt = Date.now();
           this.resetLockTimer();
           this.logger.info({ method: 'keychain', count: this.secrets.size }, 'auto-unlock succeeded');
@@ -211,6 +218,11 @@ export class SecretsStore {
     this.recoveryWrappedKey = null;
     this.unlockedAt = null;
     this.clearLockTimer();
+
+    if (!this.persistSession) {
+      void this.removeFromKeychain();
+    }
+
     this.logger.info('secrets store locked');
   }
 
@@ -392,7 +404,13 @@ export class SecretsStore {
     const timeoutRemaining = unlocked && this.unlockedAt
       ? Math.max(0, this.autoLockMs - (Date.now() - this.unlockedAt))
       : undefined;
-    return { fileExists, unlocked, timeoutRemaining };
+    return {
+      fileExists,
+      unlocked,
+      timeoutRemaining,
+      keychainAvailable: this.keychain?.isAvailable() ?? false,
+      stayAuthenticated: this.persistSession,
+    };
   }
 
   /** Whether the store is currently unlocked. */
@@ -519,6 +537,17 @@ export class SecretsStore {
       this.logger.info('vault key saved to keychain');
     } catch (err) {
       this.logger.warn({ err }, 'failed to save vault key to keychain');
+    }
+  }
+
+  /** Removes the vault key from the system keychain if available. */
+  private async removeFromKeychain(): Promise<void> {
+    if (!this.keychain?.isAvailable() || !this.keychainService || !this.keychainAccount) return;
+    try {
+      await this.keychain.remove(this.keychainService, this.keychainAccount);
+      this.logger.info('vault key removed from keychain');
+    } catch (err) {
+      this.logger.warn({ err }, 'failed to remove vault key from keychain');
     }
   }
 

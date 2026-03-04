@@ -261,9 +261,9 @@ export function createVaultRouter(deps: VaultRouterDeps): VaultRouter {
       case 'unlock': {
         const { name } = params;
         const store = getStore(vaultManager, name);
-        const body = await req.json() as { password?: string };
+        const body = await req.json() as { password?: string; stayAuthenticated?: boolean };
         if (!body.password) return fail('password required');
-        await store.unlock(body.password);
+        await store.unlock(body.password, body.stayAuthenticated ?? false);
         return ok({
           secretCount: store.getSecretCount(),
           groupCount: store.getGroupCount(),

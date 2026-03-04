@@ -15,6 +15,8 @@ interface VaultStatus {
   fileExists: boolean;
   unlocked: boolean;
   timeoutRemaining: number;
+  keychainAvailable: boolean;
+  stayAuthenticated: boolean;
 }
 
 /** Callbacks and configuration for the unlock screen. */
@@ -134,6 +136,28 @@ export function renderUnlock(container: HTMLElement, options: UnlockScreenOption
   passwordGroup.append(passwordLabel, password.wrapper, passwordError);
   form.appendChild(passwordGroup);
 
+  // Stay authenticated checkbox (hidden until we confirm keychain is available)
+  const stayAuthGroup = document.createElement("label");
+  stayAuthGroup.className = "checkbox-group";
+  stayAuthGroup.style.display = "none";
+  stayAuthGroup.style.cursor = "pointer";
+  stayAuthGroup.style.gap = "var(--space-sm)";
+  stayAuthGroup.style.alignItems = "flex-start";
+
+  const stayAuthCheckbox = document.createElement("input");
+  stayAuthCheckbox.type = "checkbox";
+  stayAuthCheckbox.id = "stay-authenticated";
+  stayAuthCheckbox.style.marginTop = "2px";
+
+  const stayAuthText = document.createElement("span");
+  stayAuthText.style.fontSize = "var(--font-size-sm)";
+  stayAuthText.style.color = "var(--color-text-secondary)";
+  stayAuthText.style.lineHeight = "1.4";
+  stayAuthText.textContent = "Stay authenticated — skip password on next visit";
+
+  stayAuthGroup.append(stayAuthCheckbox, stayAuthText);
+  form.appendChild(stayAuthGroup);
+
   // Network error alert
   const networkAlert = document.createElement("div");
   networkAlert.className = "alert alert--error";
@@ -187,6 +211,11 @@ export function renderUnlock(container: HTMLElement, options: UnlockScreenOption
     .then((status) => {
       if (status.unlocked) {
         options.onUnlocked();
+        return;
+      }
+      if (status.keychainAvailable) {
+        stayAuthGroup.style.display = "flex";
+        stayAuthCheckbox.checked = status.stayAuthenticated;
       }
     })
     .catch(() => {
@@ -209,7 +238,7 @@ export function renderUnlock(container: HTMLElement, options: UnlockScreenOption
       await api<{ secretCount: number; groupCount: number }>(
         "POST",
         `/api/vaults/${encodeURIComponent(options.vaultName)}/unlock`,
-        { password: password.input.value },
+        { password: password.input.value, stayAuthenticated: stayAuthCheckbox.checked },
       );
       options.onUnlocked();
     } catch (err: unknown) {
