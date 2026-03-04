@@ -23,6 +23,7 @@ open http://localhost:3000
 - **Groups and ordering** — organize secrets into named groups with drag-and-drop reorder
 - **.env import** — two-phase preview-then-confirm import from standard `.env` files
 - **Auto-lock** — configurable timeout zeroes the vault key from memory
+- **Stay authenticated** — opt-in macOS Keychain persistence for auto-unlock across restarts
 - **Light/dark theme** — follows system preference, toggle in the UI
 - **No plaintext export** — secrets never leave the vault unencrypted
 
@@ -68,5 +69,7 @@ bun run build        # Build lib + UI
 bun run build:lib    # Build library only
 bun run build:ui     # Build UI only
 bun run typecheck    # TypeScript strict check
-bun test             # Run tests
+bun test             # Run all tests (unit + integration + E2E)
+bun run test:integration  # Integration tests only
+bun run test:e2e          # E2E tests only
 ```

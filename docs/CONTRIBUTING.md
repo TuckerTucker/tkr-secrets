@@ -47,19 +47,35 @@ Runs `tsc --noEmit` with strict mode for both the library and UI source.
 bun test
 ```
 
-Tests use Bun's built-in test runner. Test files are colocated with source:
+Tests use Bun's built-in test runner across three layers:
 
-| Test File | Covers |
-|-----------|--------|
-| `src/crypto.test.ts` | Encryption, key derivation, key wrapping |
-| `src/store.test.ts` | SecretsStore CRUD, auto-lock, atomic writes |
-| `src/router.test.ts` | HTTP API integration (routes, status codes, envelopes) |
+```bash
+bun test                          # All tests
+bun test src/__tests__/integration/  # Integration only
+bun test src/__tests__/e2e/          # E2E only
+```
+
+| Layer | Test Files | Covers |
+|-------|-----------|--------|
+| Unit | `src/__tests__/crypto.test.ts` | Encryption, key derivation, key wrapping |
+| Unit | `src/__tests__/store.test.ts` | SecretsStore CRUD, auto-lock, atomic writes |
+| Unit | `src/__tests__/vault-router.test.ts` | HTTP API routes, status codes, envelopes |
+| Integration | `src/__tests__/integration/keychain-persistence.test.ts` | Stay-authenticated keychain lifecycle |
+| Integration | `src/__tests__/integration/auto-unlock.test.ts` | Vault discovery and auto-unlock |
+| Integration | `src/__tests__/integration/vault-lifecycle.test.ts` | Multi-vault create/lock/unlock/delete |
+| Integration | `src/__tests__/integration/import-roundtrip.test.ts` | Import pipeline end-to-end |
+| E2E | `src/__tests__/e2e/server.test.ts` | Real HTTP server, static files, SPA fallback |
+| E2E | `src/__tests__/e2e/vault-api-flows.test.ts` | Complete user journeys through the API |
+
+Shared test utilities (in-memory keychain, request helpers, harness factories) are in `src/__tests__/helpers.ts`.
 
 ### Test Patterns
 
-- Table-driven tests with `describe` / `it` blocks
+- Table-driven tests with `describe` / `test` blocks
 - Isolated temp directories per test (no shared state)
 - Constructor-injected test logger (suppresses output)
+- `InMemoryKeychainProvider` for platform-independent keychain testing
+- E2E tests use `Bun.serve` on port 0 (OS-assigned) with real `fetch()`
 
 ## Code Conventions
 
@@ -96,7 +112,7 @@ Tests use Bun's built-in test runner. Test files are colocated with source:
 - Never log secret values
 - Zero sensitive buffers after use (`buffer.fill(0)`)
 - Atomic writes for all file mutations
-- File permissions `0o600` for password files
+- Keychain operations are non-fatal (failures logged, not thrown)
 - Validate all input at the API boundary
 
 ### Bash Scripts

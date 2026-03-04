@@ -43,16 +43,14 @@ A "Create New Vault" card with a `+` icon appears at the end. Polls for updates 
 New vault creation form:
 - Vault name input (validated: lowercase, alphanumeric, hyphens)
 - Password + confirm password (with show/hide toggle)
-- "Remember password on this device" toggle
 - Creates vault and navigates to Recovery Key screen
 
 ### Unlock (`/vault/:name/unlock`)
 
 Password entry for a locked vault:
 - Password input with show/hide toggle
-- Remember password toggle
+- "Stay authenticated" checkbox (visible when macOS Keychain is available)
 - "Forgot password?" link → Recover screen
-- Fetches remembered status on load
 
 ### Manage (`/vault/:name/manage`)
 
@@ -84,7 +82,6 @@ Three input methods via tabs:
 
 After a valid recovery key is accepted:
 - New password + confirm password fields appear
-- Remember toggle
 - Submit resets the password and generates a new recovery key
 
 ## Routing

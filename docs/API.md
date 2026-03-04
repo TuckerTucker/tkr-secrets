@@ -36,13 +36,6 @@ Every response follows the same shape:
 | `POST` | `/api/vaults/:name/change-password` | Change master password |
 | `POST` | `/api/vaults/:name/recover` | Reset password via recovery key |
 
-### Password Persistence
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/vaults/:name/remember` | Save password to disk |
-| `DELETE` | `/api/vaults/:name/remember` | Remove saved password |
-
 ### Secrets (require unlock)
 
 | Method | Path | Description |

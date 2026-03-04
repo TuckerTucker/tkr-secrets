@@ -23,7 +23,7 @@ All exports from `src/index.ts`:
 ```typescript
 import type {
   Logger,              // Structured logger interface (pino-compatible)
-  SecretsStatus,       // { fileExists, unlocked, timeoutRemaining? }
+  SecretsStatus,       // { fileExists, unlocked, timeoutRemaining?, keychainAvailable, stayAuthenticated }
   SecretMapping,       // { secretName, envVar, required? }
   RecoveryKeyMaterial, // { mnemonic, raw, qr }
   VaultFileFormat,     // On-disk v2 vault schema
@@ -33,6 +33,7 @@ import type {
   VaultSummary,        // Vault listing metadata
   VaultRouter,         // HTTP router interface
   VaultRouterDeps,     // Constructor deps for router
+  KeychainProvider,    // Keychain integration interface
 } from 'tkr-secrets';
 ```
 
@@ -73,17 +74,14 @@ import {
 } from 'tkr-secrets';
 ```
 
-### Password Persistence
+### Keychain Integration
 
 ```typescript
-import {
-  resolvePasswordFilePath, // (vaultsDir, vaultName) => string
-  readPasswordFile,        // (filePath) => string | null
-  writePasswordFile,       // (filePath, password) => void (0o600 perms)
-  deletePasswordFile,      // (filePath) => void
-  isPasswordRemembered,    // (filePath) => boolean
-} from 'tkr-secrets';
+import { MacOSKeychainProvider } from 'tkr-secrets';
+import type { KeychainProvider } from 'tkr-secrets';
 ```
+
+The `MacOSKeychainProvider` uses the macOS `security` CLI to store vault keys in the system keychain, enabling stay-authenticated functionality across server restarts.
 
 ### Core Classes
 
@@ -120,33 +118,37 @@ const manager = new VaultManager({
   logger,
 });
 
-// Create a vault
-const store = await manager.createVault('my-vault');
+// Create a vault — returns { store, recoveryKey }
+const { store, recoveryKey } = await manager.create('my-vault', 'my-password');
 const recovery = await store.init('my-password');
 console.log('Recovery mnemonic:', recovery.mnemonic);
 
 // Unlock and use
 await store.unlock('my-password');
-await store.setSecret('API_KEY', 'sk-abc123');
-const value = store.getSecret('API_KEY');
+await store.set('API_KEY', 'sk-abc123');
+const value = store.get('API_KEY');
 
 // Lock when done
-store.lock();
+await store.lock();
 ```
 
 ## Example: Embedding the HTTP API
 
 ```typescript
 import { createVaultRouter, VaultManager } from 'tkr-secrets';
+import { ImportStore } from 'tkr-secrets/import';
 
 const manager = new VaultManager({ vaultsDir: './data', autoLockMs: 300_000, logger });
-const router = createVaultRouter({ manager, logger });
+const importStore = new ImportStore();
+const router = createVaultRouter({ vaultManager: manager, importStore, logger });
 
 Bun.serve({
   port: 3000,
   async fetch(req) {
-    const match = router.match(req);
-    if (match) return router.handle(req, match);
+    const url = new URL(req.url);
+    if (router.match(req.method, url.pathname)) {
+      return router.handle(req);
+    }
     return new Response('Not found', { status: 404 });
   },
 });
@@ -158,7 +160,7 @@ Bun.serve({
 import { VaultManager, injectAllSecretsToEnv } from 'tkr-secrets';
 
 const manager = new VaultManager({ vaultsDir: './data', autoLockMs: 300_000, logger });
-const store = manager.getStore('production');
+const store = manager.get('production');
 await store.unlock('password');
 
 // Inject all secrets as environment variables
@@ -166,4 +168,27 @@ injectAllSecretsToEnv(store);
 
 // Now accessible via process.env
 console.log(process.env.DATABASE_URL);
+```
+
+## Example: Stay Authenticated with Keychain
+
+```typescript
+import { VaultManager, MacOSKeychainProvider } from 'tkr-secrets';
+
+const keychain = new MacOSKeychainProvider();
+
+const manager = new VaultManager({
+  vaultsDir: './data',
+  autoLockMs: 300_000,
+  logger,
+  keychain,
+  keychainService: 'my-app-secrets',
+});
+
+// Discover existing vault files on disk
+manager.scanAndRegister();
+
+// Auto-unlock vaults that have keychain entries
+const unlocked = await manager.tryAutoUnlockAll();
+console.log(`Auto-unlocked ${unlocked} vaults`);
 ```

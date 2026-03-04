@@ -73,12 +73,32 @@ Each vault has an independent auto-lock timer (default: 5 minutes / 300,000ms). 
 
 The UI polls vault status every 10 seconds to detect auto-lock and redirect to the unlock screen.
 
+## Keychain Persistence
+
+The stay-authenticated feature optionally stores the vault key (VK) in the macOS Keychain, enabling auto-unlock across server restarts without re-entering the password.
+
+| Aspect | Details |
+|--------|---------|
+| Storage | macOS Keychain via `security` CLI (generic password) |
+| What's stored | The 32-byte vault key (VK) as hex |
+| Service name | Configurable (default: `tkr-secrets-vault`) |
+| Account name | Vault name |
+| Opt-in | User must explicitly check "Stay authenticated" on unlock |
+| Clearing | VK removed from keychain on: manual opt-out, vault deletion, password recovery |
+
+Security properties:
+
+- The VK is never written to disk as a file — it lives only in the Keychain
+- Keychain access is protected by the user's macOS login password
+- Recovery operations reset stay-authenticated state and clear the keychain entry
+- Stale keychain entries (where the VK no longer decrypts the vault) are automatically cleaned up
+- Keychain failures are non-fatal — the vault falls back to password-based unlock
+
 ## File Permissions
 
 | File | Permissions | Contents |
 |------|------------|----------|
 | `secrets-{name}.enc.json` | Default | Encrypted vault data |
-| `.secrets-password-{name}` | `0o600` (owner read/write only) | Plaintext password (opt-in "remember" feature) |
 
 ## Atomic Writes
 
@@ -114,7 +134,6 @@ This means an attacker with file access can see *how many* secrets exist and the
 - Secret key names (needed for listing while locked)
 - Group names and structure
 - The fact that a vault exists
-- Password file contents (opt-in feature — the password is stored in plaintext with restricted file permissions)
 
 ## No Plaintext Export
 

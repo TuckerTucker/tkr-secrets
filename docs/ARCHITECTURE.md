@@ -14,11 +14,12 @@ The bottom tier handles all encryption, key management, and file persistence. No
 |--------|---------------|
 | `crypto.ts` | AES-256-GCM encrypt/decrypt, Scrypt KDF, key wrapping |
 | `store.ts` | `SecretsStore` class — single-vault CRUD, auto-lock timer, atomic file writes |
-| `vault-manager.ts` | `VaultManager` — multi-vault registry, vault creation/deletion |
+| `vault-manager.ts` | `VaultManager` — multi-vault registry, vault creation/deletion, disk discovery |
 | `recovery.ts` | Recovery key generation, BIP39 mnemonic encoding, QR code generation |
 | `groups.ts` | Group CRUD, secret-to-group mappings, display order logic |
 | `import.ts` | `.env` file parser, two-phase import (preview + confirm) |
-| `password-file.ts` | Password persistence with 0o600 file permissions |
+| `keychain.ts` | macOS Keychain integration for stay-authenticated vault key persistence |
+| `server.ts` | Server factory — creates `Bun.serve` with router and static file serving |
 | `env-bridge.ts` | Inject decrypted secrets into `process.env` |
 | `types.ts` | Shared TypeScript interfaces and constants |
 
@@ -29,7 +30,7 @@ The middle tier exposes the core library as REST endpoints. Stateless request ha
 | Component | Details |
 |-----------|---------|
 | Router | `vault-router.ts` — pattern matching on `/api/vaults/*` paths |
-| Server | `serve.ts` — `Bun.serve()` on port 3000 with hot reload in dev |
+| Server | `server.ts` — server factory; `serve.ts` — dev entry point on port 3000 |
 | Envelope | `{ success: true, data: {...} }` or `{ success: false, error: "..." }` |
 | Status codes | 200, 400, 404, 409, 423 (locked) |
 
@@ -64,12 +65,13 @@ User action (click, form submit)
 
 ## File System
 
-Each vault produces two files in the configured vaults directory:
+Each vault produces one file in the configured vaults directory:
 
 | File | Format | Permissions |
 |------|--------|-------------|
 | `secrets-{name}.enc.json` | [Vault File v2](SECURITY.md#vault-file-format) | Default |
-| `.secrets-password-{name}` | Plaintext password (opt-in) | `0o600` |
+
+Optionally, vault keys can be persisted in the macOS Keychain for stay-authenticated functionality (see [SECURITY.md](SECURITY.md#keychain-persistence)).
 
 Writes are atomic — a temp file is written first, then renamed into place. This prevents corruption if the process crashes mid-write.
 
@@ -85,12 +87,18 @@ tkr-secrets/
 │   ├── vault-manager.ts      # Multi-vault registry
 │   ├── groups.ts             # Group/order logic
 │   ├── recovery.ts           # Recovery key generation
-│   ├── password-file.ts      # Password persistence
+│   ├── keychain.ts           # macOS Keychain integration
+│   ├── server.ts             # Server factory
 │   ├── import.ts             # .env parser + import flow
 │   ├── env-bridge.ts         # process.env injection
 │   ├── testing.ts            # Test utilities
-│   └── http/
-│       └── vault-router.ts   # REST API router
+│   ├── http/
+│   │   ├── vault-router.ts   # REST API router (multi-vault)
+│   │   └── router.ts         # Legacy single-vault router
+│   └── __tests__/
+│       ├── helpers.ts         # Shared test utilities
+│       ├── integration/       # Multi-component integration tests
+│       └── e2e/               # Full HTTP server E2E tests
 ├── ui/
 │   ├── index.html            # SPA shell
 │   └── src/
