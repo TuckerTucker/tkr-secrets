@@ -151,10 +151,8 @@ describe('vault lifecycle', () => {
     expect(keychain.entries.size).toBeGreaterThan(0);
 
     await h.router.handle(req('DELETE', '/api/vaults/myapp'));
-    // Keychain entry should be cleared because lock() was called during delete
-    // (lock without persist removes keychain — but persistSession was true, so it stays)
-    // Actually: delete calls lock() which preserves keychain if persistSession is true
-    // This is acceptable — the vault file is deleted so the key is useless
+    // delete() explicitly clears keychain regardless of persistSession
+    expect(keychain.entries.has('test-service:myapp')).toBe(false);
   });
 
   test('auto-lock timer triggers lock', async () => {
@@ -190,5 +188,27 @@ describe('vault lifecycle', () => {
     // Verify imported secrets
     const res = await h.router.handle(req('GET', '/api/vaults/myapp/secrets/DB_HOST'));
     expect(((await json(res)).data as { value: string }).value).toBe('localhost');
+  });
+
+  test('tryAutoUnlock handles missing vault file gracefully', async () => {
+    h = createIntegrationHarness();
+    const keychain = h.keychain;
+
+    await h.router.handle(req('POST', '/api/vaults', { name: 'myapp', password: PASSWORD }));
+    await h.router.handle(req('POST', '/api/vaults/myapp/lock'));
+    await h.router.handle(req('POST', '/api/vaults/myapp/unlock', { password: PASSWORD, stayAuthenticated: true }));
+    await h.router.handle(req('POST', '/api/vaults/myapp/lock'));
+
+    expect(keychain.entries.size).toBeGreaterThan(0);
+
+    // Delete the vault file but leave keychain entry
+    const { unlinkSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    unlinkSync(join(h.tmpDir, 'secrets-myapp.enc.json'));
+
+    // tryAutoUnlock should return false gracefully (file not found)
+    const store = h.vaultManager.get('myapp')!;
+    const unlocked = await store.tryAutoUnlock();
+    expect(unlocked).toBe(false);
   });
 });

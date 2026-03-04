@@ -66,13 +66,13 @@ export function createSecretsRouter(deps: SecretsRouterDeps): SecretsRouter {
           if (!body.password) return fail('password required');
           await store.unlock(body.password);
           const count = injectAllSecretsToEnv(store, log);
-          store.lock();
+          await store.lock();
           return ok({ injected: count });
         }
 
         // POST /api/secrets/lock
         if (method === 'POST' && path === `${PREFIX}/lock`) {
-          store.lock();
+          await store.lock();
           return ok();
         }
 

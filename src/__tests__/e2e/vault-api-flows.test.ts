@@ -22,7 +22,7 @@ import {
 import type { Server } from 'bun';
 
 describe('vault API flows', () => {
-  let server: Server;
+  let server: Server<unknown>;
   let baseUrl: string;
   let tmpDir: string;
   let keychain: InMemoryKeychainProvider;
@@ -306,5 +306,53 @@ describe('vault API flows', () => {
     expect(dataA.data.value).toBe('aaa');
     expect(dataB.data.value).toBe('bbb');
     expect(dataC.data.value).toBe('ccc');
+  });
+
+  test('recovery clears stay-authenticated state', async () => {
+    // Create vault with stay-authenticated
+    const createRes = await apiFetch(baseUrl, 'POST', '/api/vaults', { name: 'recover-persist', password: PASSWORD });
+    const createData = await createRes.json() as { data: { recoveryKey: { raw: string } } };
+
+    await apiFetch(baseUrl, 'POST', '/api/vaults/recover-persist/secrets/DATA', { value: 'important' });
+    await apiFetch(baseUrl, 'POST', '/api/vaults/recover-persist/lock');
+    await apiFetch(baseUrl, 'POST', '/api/vaults/recover-persist/unlock', {
+      password: PASSWORD,
+      stayAuthenticated: true,
+    });
+
+    // Verify persisting
+    const statusBefore = await apiFetch(baseUrl, 'GET', '/api/vaults/recover-persist/status');
+    const beforeData = await statusBefore.json() as { data: { stayAuthenticated: boolean } };
+    expect(beforeData.data.stayAuthenticated).toBe(true);
+
+    await apiFetch(baseUrl, 'POST', '/api/vaults/recover-persist/lock');
+
+    // Recover — should clear stay-authenticated
+    await apiFetch(baseUrl, 'POST', '/api/vaults/recover-persist/recover', {
+      recoveryKey: createData.data.recoveryKey.raw,
+      newPassword: 'new-pw',
+    });
+
+    const statusAfter = await apiFetch(baseUrl, 'GET', '/api/vaults/recover-persist/status');
+    const afterData = await statusAfter.json() as { data: { stayAuthenticated: boolean } };
+    expect(afterData.data.stayAuthenticated).toBe(false);
+
+    // Simulate restart — should NOT auto-unlock
+    server.stop();
+    const result2 = createServer({
+      port: 0,
+      vaultsDir: tmpDir,
+      uiDir: join(import.meta.dir, '..', '..', '..', 'ui'),
+      keychain,
+      keychainService: 'test-flow',
+    });
+    server = result2.server;
+    const baseUrl2 = `http://localhost:${server.port}`;
+
+    await result2.vaultManager.tryAutoUnlockAll();
+
+    const statusRestart = await apiFetch(baseUrl2, 'GET', '/api/vaults/recover-persist/status');
+    const restartData = await statusRestart.json() as { data: { unlocked: boolean } };
+    expect(restartData.data.unlocked).toBe(false);
   });
 });

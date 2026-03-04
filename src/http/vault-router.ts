@@ -273,7 +273,7 @@ export function createVaultRouter(deps: VaultRouterDeps): VaultRouter {
       case 'lock': {
         const { name } = params;
         const store = getStore(vaultManager, name);
-        store.lock();
+        await store.lock();
         return ok({});
       }
 

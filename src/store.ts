@@ -182,7 +182,8 @@ export class SecretsStore {
           return true;
         }
       } catch (err) {
-        this.logger.debug({ err }, 'keychain auto-unlock failed — trying next method');
+        this.logger.warn({ err }, 'keychain auto-unlock failed — removing stale entry');
+        await this.removeFromKeychain();
       }
     }
 
@@ -203,8 +204,12 @@ export class SecretsStore {
 
   /**
    * Locks the store, zeroing the vault key from memory and clearing all state.
+   *
+   * If the user has not opted into stay-authenticated, the keychain entry
+   * is removed. This is awaited to ensure the key is actually cleared
+   * before the lock completes.
    */
-  lock(): void {
+  async lock(): Promise<void> {
     if (this.vaultKey) {
       this.vaultKey.fill(0);
     }
@@ -220,7 +225,7 @@ export class SecretsStore {
     this.clearLockTimer();
 
     if (!this.persistSession) {
-      void this.removeFromKeychain();
+      await this.removeFromKeychain();
     }
 
     this.logger.info('secrets store locked');
@@ -344,8 +349,13 @@ export class SecretsStore {
     this.groups = new Map(Object.entries(data.groups));
     this.order = [...data.order];
     this.secretGroups = new Map(Object.entries(data.secretGroups));
+    this.persistSession = false;
     this.unlockedAt = Date.now();
     this.resetLockTimer();
+
+    // Recovery is security-sensitive — clear any keychain entry
+    // to require explicit re-authentication
+    await this.removeFromKeychain();
 
     this.logger.info('vault recovered with new password and recovery key');
     return newRk;
@@ -556,7 +566,7 @@ export class SecretsStore {
     this.unlockedAt = Date.now();
     this.lockTimer = setTimeout(() => {
       this.logger.info('auto-lock timeout reached');
-      this.lock();
+      void this.lock();
     }, this.autoLockMs);
   }
 

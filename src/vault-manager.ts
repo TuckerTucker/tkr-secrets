@@ -172,7 +172,16 @@ export class VaultManager {
     }
 
     if (store.isUnlocked) {
-      store.lock();
+      await store.lock();
+    }
+
+    // Always clear keychain on delete, regardless of persistSession
+    if (this.keychain?.isAvailable() && this.keychainService) {
+      try {
+        await this.keychain.remove(this.keychainService, name);
+      } catch {
+        // Best-effort cleanup
+      }
     }
 
     const vaultFile = this.getVaultFilePath(name);

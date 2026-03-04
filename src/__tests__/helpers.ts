@@ -167,7 +167,7 @@ export function createIntegrationHarness(opts?: IntegrationHarnessOptions): Inte
 
 /** E2E test server with base URL and cleanup. */
 export interface E2EServer {
-  readonly server: Server;
+  readonly server: Server<unknown>;
   readonly baseUrl: string;
   readonly vaultManager: VaultManager;
   readonly keychain: InMemoryKeychainProvider;

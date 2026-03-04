@@ -37,7 +37,7 @@ export interface ServerOptions {
 /** Result of creating a server, with references for testing and cleanup. */
 export interface ServerInstance {
   /** The running Bun HTTP server. */
-  readonly server: Server;
+  readonly server: Server<unknown>;
   /** The vault manager instance. */
   readonly vaultManager: VaultManager;
 }
