@@ -977,40 +977,110 @@ function createImportSection(): HTMLElement {
   sectionTitle.textContent = "Import";
   section.appendChild(sectionTitle);
 
-  const importBtn = document.createElement("button");
-  importBtn.type = "button";
-  importBtn.className = "btn btn--secondary";
-  importBtn.textContent = "Import .env file";
-  importBtn.addEventListener("click", () => {
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = ".env,.env.*";
-    fileInput.style.display = "none";
-    fileInput.addEventListener("change", async () => {
-      const file = fileInput.files?.[0];
-      if (!file) return;
-      const content = await file.text();
-      try {
-        const preview = await api<ImportPreviewResponse>(
-          "POST",
-          `${vaultPath()}/import`,
-          { content },
-        );
-        currentImportPreview = preview;
-        refreshContent();
-      } catch (err: unknown) {
-        const alert = document.createElement("div");
-        alert.className = "alert alert--error";
-        alert.setAttribute("role", "alert");
-        alert.textContent = err instanceof Error ? err.message : "Import failed";
-        section.appendChild(alert);
-      }
-    });
-    document.body.appendChild(fileInput);
-    fileInput.click();
-    document.body.removeChild(fileInput);
+  const dropZone = document.createElement("div");
+  dropZone.style.cssText = [
+    "border: 2px dashed var(--color-border-default)",
+    "border-radius: var(--radius-md)",
+    "padding: var(--space-6) var(--space-4)",
+    "text-align: center",
+    "cursor: pointer",
+    "color: var(--color-text-secondary)",
+    "font-size: var(--font-size-sm)",
+    "line-height: var(--line-height-normal)",
+    "transition: background var(--transition-fast), border-color var(--transition-fast)",
+  ].join(";");
+  dropZone.textContent = "Drop .env file here or click to browse";
+  dropZone.setAttribute("tabindex", "0");
+  dropZone.setAttribute("role", "button");
+  dropZone.setAttribute("aria-label", "Import .env file");
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.style.display = "none";
+
+  const importError = document.createElement("div");
+  importError.className = "form-group__error";
+  importError.setAttribute("role", "alert");
+
+  /**
+   * Returns true if a filename looks like an env file (.env, .env.local, etc.).
+   */
+  function isEnvFile(name: string): boolean {
+    const base = name.split("/").pop() ?? name;
+    return base === ".env" || base.startsWith(".env.");
+  }
+
+  /**
+   * Processes an uploaded .env file and shows the import preview.
+   */
+  async function handleImportFile(file: File): Promise<void> {
+    importError.textContent = "";
+
+    if (!isEnvFile(file.name)) {
+      importError.textContent = "Invalid file. Please select a .env file.";
+      return;
+    }
+
+    let content: string;
+    try {
+      content = await file.text();
+    } catch {
+      importError.textContent = "Failed to read file.";
+      return;
+    }
+
+    try {
+      const preview = await api<ImportPreviewResponse>(
+        "POST",
+        `${vaultPath()}/import`,
+        { content },
+      );
+      currentImportPreview = preview;
+      refreshContent();
+    } catch (err: unknown) {
+      importError.textContent = err instanceof Error ? err.message : "Import failed";
+    }
+  }
+
+  dropZone.addEventListener("click", () => fileInput.click());
+  dropZone.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      fileInput.click();
+    }
   });
-  section.appendChild(importBtn);
+
+  dropZone.addEventListener("dragover", (e: DragEvent) => {
+    e.preventDefault();
+    dropZone.style.background = "var(--color-status-info-bg)";
+    dropZone.style.borderColor = "var(--color-status-info)";
+  });
+
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.style.background = "";
+    dropZone.style.borderColor = "";
+  });
+
+  dropZone.addEventListener("drop", (e: DragEvent) => {
+    e.preventDefault();
+    dropZone.style.background = "";
+    dropZone.style.borderColor = "";
+    const file = e.dataTransfer?.files[0];
+    if (file) {
+      handleImportFile(file);
+    }
+  });
+
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files?.[0];
+    if (file) {
+      handleImportFile(file);
+    }
+    fileInput.value = "";
+  });
+
+  dropZone.appendChild(fileInput);
+  section.append(dropZone, importError);
 
   // Show preview if available
   if (currentImportPreview) {

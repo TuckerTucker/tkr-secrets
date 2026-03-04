@@ -117,8 +117,8 @@ describe('SecretsStore', () => {
     const pwFile = join(dir, '.pw');
     await writePasswordFile(pwFile, 'auto-pw');
 
-    const store2 = new SecretsStore(deps);
-    const ok = await store2.tryAutoUnlock(pwFile);
+    const store2 = new SecretsStore({ ...deps, passwordFilePath: pwFile });
+    const ok = await store2.tryAutoUnlock();
     expect(ok).toBe(true);
     expect(store2.get('SECRET')).toBe('value');
   });
@@ -128,8 +128,8 @@ describe('SecretsStore', () => {
     await store.init('pw');
     store.lock();
 
-    const store2 = new SecretsStore(makeDeps(dir));
-    const ok = await store2.tryAutoUnlock(join(dir, 'nonexistent'));
+    const store2 = new SecretsStore({ ...makeDeps(dir), passwordFilePath: join(dir, 'nonexistent') });
+    const ok = await store2.tryAutoUnlock();
     expect(ok).toBe(false);
   });
 });

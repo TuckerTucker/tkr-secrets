@@ -68,3 +68,16 @@ export function injectAllSecretsToEnv(
 
   return count;
 }
+
+/**
+ * Syncs a single secret to process.env. Call after set or delete.
+ * On set: writes the uppercase env var. On delete: removes it.
+ */
+export function syncSecretToEnv(name: string, value: string | undefined): void {
+  const envVar = name.toUpperCase();
+  if (value !== undefined) {
+    process.env[envVar] = value;
+  } else {
+    delete process.env[envVar];
+  }
+}

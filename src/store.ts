@@ -12,17 +12,30 @@ import { SECRET_NAME_RE, DEFAULT_AUTO_LOCK_MS } from './types.js';
 import { generateSalt, deriveKey, encrypt, decrypt, generateVaultKey, wrapKey, unwrapKey } from './crypto.js';
 import { generateRecoveryKey } from './recovery.js';
 import { readPasswordFile } from './password-file.js';
+import type { KeychainProvider } from './keychain.js';
 
 export interface SecretsStoreDeps {
   readonly filePath: string;
   readonly autoLockMs: number;
   readonly logger: Logger;
+  /** Optional keychain provider for auto-unlock on macOS. */
+  readonly keychain?: KeychainProvider;
+  /** Keychain service name (e.g., 'tkr-secrets-vault'). */
+  readonly keychainService?: string;
+  /** Keychain account name (e.g., vault name). */
+  readonly keychainAccount?: string;
+  /** Optional path to a password file for auto-unlock fallback. */
+  readonly passwordFilePath?: string;
 }
 
 export class SecretsStore {
   private readonly filePath: string;
   private readonly autoLockMs: number;
   private readonly logger: Logger;
+  private readonly keychain?: KeychainProvider;
+  private readonly keychainService?: string;
+  private readonly keychainAccount?: string;
+  private readonly passwordFilePath?: string;
 
   private vaultKey: Buffer | null = null;
   private salt: string | null = null;
@@ -39,6 +52,10 @@ export class SecretsStore {
     this.filePath = deps.filePath;
     this.autoLockMs = deps.autoLockMs;
     this.logger = deps.logger.child({ component: 'secrets-store' });
+    this.keychain = deps.keychain;
+    this.keychainService = deps.keychainService;
+    this.keychainAccount = deps.keychainAccount;
+    this.passwordFilePath = deps.passwordFilePath;
   }
 
   /**
@@ -122,6 +139,79 @@ export class SecretsStore {
     this.unlockedAt = Date.now();
     this.resetLockTimer();
     this.logger.info({ count: this.secrets.size }, 'secrets store unlocked');
+
+    // Save VK to keychain for auto-unlock on next boot
+    await this.saveToKeychain(vk);
+  }
+
+  /**
+   * Attempts auto-unlock without user interaction.
+   *
+   * Tries in order:
+   * 1. macOS Keychain — retrieve VK directly
+   * 2. TKR_VAULT_PASSWORD env var — derive PK, unwrap VK
+   * 3. Password file — read stored password, derive PK, unwrap VK
+   *
+   * @returns true if the store was unlocked, false if manual unlock is needed.
+   */
+  async tryAutoUnlock(): Promise<boolean> {
+    const data = await this.readFile();
+    if (!data) return false;
+
+    // 1. Try keychain
+    if (this.keychain?.isAvailable() && this.keychainService && this.keychainAccount) {
+      try {
+        const vk = await this.keychain.retrieve(this.keychainService, this.keychainAccount);
+        if (vk) {
+          const decrypted = new Map<string, string>();
+          for (const [name, ciphertext] of Object.entries(data.secrets)) {
+            decrypted.set(name, decrypt(ciphertext, vk));
+          }
+          this.vaultKey = vk;
+          this.salt = data.salt;
+          this.secrets = decrypted;
+          this.passwordWrappedKey = data.passwordWrappedKey;
+          this.recoveryWrappedKey = data.recoveryWrappedKey;
+          this.groups = new Map(Object.entries(data.groups));
+          this.order = [...data.order];
+          this.secretGroups = new Map(Object.entries(data.secretGroups));
+          this.unlockedAt = Date.now();
+          this.resetLockTimer();
+          this.logger.info({ method: 'keychain', count: this.secrets.size }, 'auto-unlock succeeded');
+          return true;
+        }
+      } catch (err) {
+        this.logger.debug({ err }, 'keychain auto-unlock failed — trying next method');
+      }
+    }
+
+    // 2. Try env var
+    const envPassword = process.env['TKR_VAULT_PASSWORD'];
+    if (envPassword) {
+      try {
+        await this.unlock(envPassword);
+        this.logger.info({ method: 'env' }, 'auto-unlock succeeded via TKR_VAULT_PASSWORD');
+        return true;
+      } catch {
+        this.logger.warn('TKR_VAULT_PASSWORD set but unlock failed — invalid password');
+      }
+    }
+
+    // 3. Try password file
+    if (this.passwordFilePath) {
+      const password = await readPasswordFile(this.passwordFilePath);
+      if (password) {
+        try {
+          await this.unlock(password);
+          this.logger.info({ method: 'password-file' }, 'auto-unlock succeeded from password file');
+          return true;
+        } catch {
+          this.logger.warn('auto-unlock failed — password file may be stale');
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -267,21 +357,6 @@ export class SecretsStore {
 
     this.logger.info('vault recovered with new password and recovery key');
     return newRk;
-  }
-
-  /** Attempts auto-unlock from a password file. Returns true if successful. */
-  async tryAutoUnlock(passwordFilePath: string): Promise<boolean> {
-    if (!await this.fileExists()) return false;
-    const password = await readPasswordFile(passwordFilePath);
-    if (!password) return false;
-    try {
-      await this.unlock(password);
-      this.logger.info('auto-unlocked from password file');
-      return true;
-    } catch {
-      this.logger.warn('auto-unlock failed — password file may be stale');
-      return false;
-    }
   }
 
   /** Gets a secret value by name. Falls back to process.env when locked. */
@@ -454,6 +529,17 @@ export class SecretsStore {
     const tmpPath = join(dir, `.secrets-${randomBytes(8).toString('hex')}.tmp`);
     await Bun.write(tmpPath, JSON.stringify(data, null, 2));
     renameSync(tmpPath, this.filePath);
+  }
+
+  /** Stores the vault key in the system keychain if available. */
+  private async saveToKeychain(vk: Buffer): Promise<void> {
+    if (!this.keychain?.isAvailable() || !this.keychainService || !this.keychainAccount) return;
+    try {
+      await this.keychain.store(this.keychainService, this.keychainAccount, vk);
+      this.logger.info('vault key saved to keychain');
+    } catch (err) {
+      this.logger.warn({ err }, 'failed to save vault key to keychain');
+    }
   }
 
   private resetLockTimer(): void {
