@@ -2,7 +2,7 @@
  * Vault unlock screen.
  *
  * Presents a password entry form to unlock a locked vault. Supports
- * remember-password toggle, forgot-password link, and auto-focus.
+ * forgot-password link and auto-focus.
  *
  * @module screens/unlock
  */
@@ -14,7 +14,6 @@ interface VaultStatus {
   name: string;
   fileExists: boolean;
   unlocked: boolean;
-  remembered: boolean;
   timeoutRemaining: number;
 }
 
@@ -70,62 +69,6 @@ function createPasswordField(
 
   wrapper.append(input, toggle);
   return { wrapper, input };
-}
-
-/**
- * Creates a toggle switch element.
- *
- * @param id - Unique identifier for the toggle.
- * @param labelText - Label displayed next to the toggle.
- * @param defaultValue - Initial toggle state.
- * @returns An object with the wrapper element and a getter/setter for the current state.
- */
-function createToggle(
-  id: string,
-  labelText: string,
-  defaultValue: boolean,
-): { wrapper: HTMLElement; getValue: () => boolean; setValue: (v: boolean) => void } {
-  let active = defaultValue;
-
-  const wrapper = document.createElement("div");
-  wrapper.className = `toggle${active ? " toggle--active" : ""}`;
-  wrapper.setAttribute("role", "switch");
-  wrapper.setAttribute("aria-checked", String(active));
-  wrapper.setAttribute("aria-label", labelText);
-  wrapper.setAttribute("tabindex", "0");
-
-  const track = document.createElement("div");
-  track.className = "toggle__track";
-
-  const thumb = document.createElement("div");
-  thumb.className = "toggle__thumb";
-  track.appendChild(thumb);
-
-  const label = document.createElement("span");
-  label.className = "toggle__label";
-  label.textContent = labelText;
-
-  wrapper.append(track, label);
-
-  const setActive = (val: boolean): void => {
-    active = val;
-    wrapper.classList.toggle("toggle--active", active);
-    wrapper.setAttribute("aria-checked", String(active));
-  };
-
-  const toggle = (): void => {
-    setActive(!active);
-  };
-
-  wrapper.addEventListener("click", toggle);
-  wrapper.addEventListener("keydown", (e: KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      toggle();
-    }
-  });
-
-  return { wrapper, getValue: () => active, setValue: setActive };
 }
 
 /**
@@ -191,10 +134,6 @@ export function renderUnlock(container: HTMLElement, options: UnlockScreenOption
   passwordGroup.append(passwordLabel, password.wrapper, passwordError);
   form.appendChild(passwordGroup);
 
-  // Remember toggle
-  const remember = createToggle("unlock-remember", "Remember password on this device", false);
-  form.appendChild(remember.wrapper);
-
   // Network error alert
   const networkAlert = document.createElement("div");
   networkAlert.className = "alert alert--error";
@@ -242,11 +181,10 @@ export function renderUnlock(container: HTMLElement, options: UnlockScreenOption
     validate();
   });
 
-  // ── Fetch initial status for remember state ──
+  // ── Check if already unlocked ──
 
   api<VaultStatus>("GET", `/api/vaults/${encodeURIComponent(options.vaultName)}/status`)
     .then((status) => {
-      remember.setValue(status.remembered);
       if (status.unlocked) {
         options.onUnlocked();
       }
@@ -271,7 +209,7 @@ export function renderUnlock(container: HTMLElement, options: UnlockScreenOption
       await api<{ secretCount: number; groupCount: number }>(
         "POST",
         `/api/vaults/${encodeURIComponent(options.vaultName)}/unlock`,
-        { password: password.input.value, remember: remember.getValue() },
+        { password: password.input.value },
       );
       options.onUnlocked();
     } catch (err: unknown) {

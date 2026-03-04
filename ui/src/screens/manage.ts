@@ -16,7 +16,6 @@ import { api, ApiError } from "../api.js";
 interface VaultStatus {
   name: string;
   unlocked: boolean;
-  remembered: boolean;
   timeoutRemaining: number;
   secretCount: number;
   groupCount: number;
@@ -1175,7 +1174,7 @@ function createImportSection(): HTMLElement {
 // ── Render: Settings Section ─────────────────────────────────────────
 
 /**
- * Creates the settings panel with remember toggle, change password, and delete vault.
+ * Creates the settings panel with change password and delete vault.
  *
  * @param status - Current vault status.
  * @param opts - Manage screen options.
@@ -1194,61 +1193,6 @@ function createSettingsSection(status: VaultStatus, opts: ManageScreenOptions): 
   ].join(";");
   title.textContent = "Settings";
   section.appendChild(title);
-
-  // ── Remember toggle ──
-  const rememberRow = document.createElement("div");
-  rememberRow.style.cssText = "display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)";
-
-  let rememberActive = status.remembered;
-
-  const rememberWrapper = document.createElement("div");
-  rememberWrapper.className = `toggle${rememberActive ? " toggle--active" : ""}`;
-  rememberWrapper.setAttribute("role", "switch");
-  rememberWrapper.setAttribute("aria-checked", String(rememberActive));
-  rememberWrapper.setAttribute("aria-label", "Remember password on this device");
-  rememberWrapper.setAttribute("tabindex", "0");
-
-  const rememberTrack = document.createElement("div");
-  rememberTrack.className = "toggle__track";
-  const rememberThumb = document.createElement("div");
-  rememberThumb.className = "toggle__thumb";
-  rememberTrack.appendChild(rememberThumb);
-
-  const rememberLabel = document.createElement("span");
-  rememberLabel.className = "toggle__label";
-  rememberLabel.textContent = "Remember password";
-
-  rememberWrapper.append(rememberTrack, rememberLabel);
-
-  const toggleRemember = async (): Promise<void> => {
-    rememberActive = !rememberActive;
-    rememberWrapper.classList.toggle("toggle--active", rememberActive);
-    rememberWrapper.setAttribute("aria-checked", String(rememberActive));
-
-    try {
-      if (rememberActive) {
-        await api<Record<string, never>>("POST", `${vaultPath()}/remember`, {});
-      } else {
-        await api<Record<string, never>>("DELETE", `${vaultPath()}/remember`);
-      }
-    } catch {
-      // Revert on failure
-      rememberActive = !rememberActive;
-      rememberWrapper.classList.toggle("toggle--active", rememberActive);
-      rememberWrapper.setAttribute("aria-checked", String(rememberActive));
-    }
-  };
-
-  rememberWrapper.addEventListener("click", toggleRemember);
-  rememberWrapper.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      toggleRemember();
-    }
-  });
-
-  rememberRow.appendChild(rememberWrapper);
-  section.appendChild(rememberRow);
 
   // ── Change password ──
   const changePwSection = document.createElement("div");
@@ -1345,7 +1289,6 @@ function createSettingsSection(status: VaultStatus, opts: ManageScreenOptions): 
       await api<Record<string, never>>("POST", `${vaultPath()}/change-password`, {
         currentPassword: currentPw.input.value,
         newPassword: newPw.input.value,
-        remember: rememberActive,
       });
       currentPw.input.value = "";
       newPw.input.value = "";

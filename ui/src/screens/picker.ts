@@ -17,7 +17,6 @@ export interface VaultSummary {
   secretCount: number;
   groupCount: number;
   lastAccessed: string | null;
-  remembered: boolean;
 }
 
 /** Callbacks the picker delegates to its parent. */

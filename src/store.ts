@@ -11,7 +11,6 @@ import type { Logger, VaultFileFormat, GroupMeta, SecretsFileFormat, SecretsStat
 import { SECRET_NAME_RE, DEFAULT_AUTO_LOCK_MS } from './types.js';
 import { generateSalt, deriveKey, encrypt, decrypt, generateVaultKey, wrapKey, unwrapKey } from './crypto.js';
 import { generateRecoveryKey } from './recovery.js';
-import { readPasswordFile } from './password-file.js';
 import type { KeychainProvider } from './keychain.js';
 
 export interface SecretsStoreDeps {
@@ -24,8 +23,6 @@ export interface SecretsStoreDeps {
   readonly keychainService?: string;
   /** Keychain account name (e.g., vault name). */
   readonly keychainAccount?: string;
-  /** Optional path to a password file for auto-unlock fallback. */
-  readonly passwordFilePath?: string;
 }
 
 export class SecretsStore {
@@ -35,8 +32,6 @@ export class SecretsStore {
   private readonly keychain?: KeychainProvider;
   private readonly keychainService?: string;
   private readonly keychainAccount?: string;
-  private readonly passwordFilePath?: string;
-
   private vaultKey: Buffer | null = null;
   private salt: string | null = null;
   private secrets: Map<string, string> = new Map();
@@ -55,7 +50,6 @@ export class SecretsStore {
     this.keychain = deps.keychain;
     this.keychainService = deps.keychainService;
     this.keychainAccount = deps.keychainAccount;
-    this.passwordFilePath = deps.passwordFilePath;
   }
 
   /**
@@ -194,20 +188,6 @@ export class SecretsStore {
         return true;
       } catch {
         this.logger.warn('TKR_VAULT_PASSWORD set but unlock failed — invalid password');
-      }
-    }
-
-    // 3. Try password file
-    if (this.passwordFilePath) {
-      const password = await readPasswordFile(this.passwordFilePath);
-      if (password) {
-        try {
-          await this.unlock(password);
-          this.logger.info({ method: 'password-file' }, 'auto-unlock succeeded from password file');
-          return true;
-        } catch {
-          this.logger.warn('auto-unlock failed — password file may be stale');
-        }
       }
     }
 

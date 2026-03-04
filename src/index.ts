@@ -10,13 +10,6 @@ export {
   buildRecoveryKeyMaterial,
   buildRecoveryFile,
 } from './recovery.js';
-export {
-  resolvePasswordFilePath,
-  readPasswordFile,
-  writePasswordFile,
-  deletePasswordFile,
-  isPasswordRemembered,
-} from './password-file.js';
 export { SecretsStore } from './store.js';
 export type { SecretsStoreDeps } from './store.js';
 export { VaultManager, validateVaultName } from './vault-manager.js';

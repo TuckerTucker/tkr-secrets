@@ -14,7 +14,6 @@ function makeRouter(dir: string) {
   });
   const router = createSecretsRouter({
     store,
-    passwordFilePath: join(dir, '.pw'),
     logger: createNullLogger(),
   });
   return { store, router };

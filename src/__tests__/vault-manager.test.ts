@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
-import { mkdtempSync, existsSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rmSync } from 'node:fs';
@@ -124,16 +124,10 @@ describe('VaultManager', () => {
     const vm = createManager();
     await vm.create('myapp', password);
 
-    // Create a fake password file to verify deletion
-    const pwFile = vm.getPasswordFilePath('myapp');
-    writeFileSync(pwFile, 'test');
-    expect(existsSync(pwFile)).toBe(true);
-
     await vm.delete('myapp');
 
     expect(vm.get('myapp')).toBeUndefined();
     expect(existsSync(join(tmpDir, 'secrets-myapp.enc.json'))).toBe(false);
-    expect(existsSync(pwFile)).toBe(false);
   });
 
   test('delete throws on unknown vault', async () => {
@@ -173,9 +167,4 @@ describe('VaultManager', () => {
     expect(summaries[0].groupCount).toBe(0);
   });
 
-  test('getPasswordFilePath returns correct path', () => {
-    const vm = createManager();
-    const path = vm.getPasswordFilePath('myapp');
-    expect(path).toBe(join(tmpDir, '.secrets-password-myapp'));
-  });
 });

@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { SecretsStore } from './store.js';
-import { writePasswordFile } from './password-file.js';
 import { createNullLogger } from './testing.js';
 
 function makeDeps(dir: string) {
@@ -107,28 +106,32 @@ describe('SecretsStore', () => {
     expect(s.unlocked).toBe(false);
   });
 
-  test('tryAutoUnlock works with password file', async () => {
+  test('tryAutoUnlock succeeds via TKR_VAULT_PASSWORD env var', async () => {
     const deps = makeDeps(dir);
     const store = new SecretsStore(deps);
     await store.init('auto-pw');
     await store.set('SECRET', 'value');
     store.lock();
 
-    const pwFile = join(dir, '.pw');
-    await writePasswordFile(pwFile, 'auto-pw');
-
-    const store2 = new SecretsStore({ ...deps, passwordFilePath: pwFile });
-    const ok = await store2.tryAutoUnlock();
-    expect(ok).toBe(true);
-    expect(store2.get('SECRET')).toBe('value');
+    const prev = process.env['TKR_VAULT_PASSWORD'];
+    process.env['TKR_VAULT_PASSWORD'] = 'auto-pw';
+    try {
+      const store2 = new SecretsStore(deps);
+      const ok = await store2.tryAutoUnlock();
+      expect(ok).toBe(true);
+      expect(store2.get('SECRET')).toBe('value');
+    } finally {
+      if (prev === undefined) delete process.env['TKR_VAULT_PASSWORD'];
+      else process.env['TKR_VAULT_PASSWORD'] = prev;
+    }
   });
 
-  test('tryAutoUnlock returns false without password file', async () => {
+  test('tryAutoUnlock returns false with no unlock methods available', async () => {
     const store = new SecretsStore(makeDeps(dir));
     await store.init('pw');
     store.lock();
 
-    const store2 = new SecretsStore({ ...makeDeps(dir), passwordFilePath: join(dir, 'nonexistent') });
+    const store2 = new SecretsStore(makeDeps(dir));
     const ok = await store2.tryAutoUnlock();
     expect(ok).toBe(false);
   });

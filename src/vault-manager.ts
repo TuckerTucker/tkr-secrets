@@ -37,7 +37,6 @@ export interface VaultSummary {
   readonly secretCount: number;
   readonly groupCount: number;
   readonly lastAccessed: string | null;
-  readonly remembered: boolean;
 }
 
 /**
@@ -85,10 +84,8 @@ export class VaultManager {
     const summaries: VaultSummary[] = [];
     for (const [name, store] of this.vaults) {
       const filePath = this.getVaultFilePath(name);
-      const passwordFilePath = this.getPasswordFilePath(name);
       const fileExists = existsSync(filePath);
       const unlocked = store.isUnlocked;
-      const remembered = existsSync(passwordFilePath);
 
       let secretCount = 0;
       let groupCount = 0;
@@ -104,7 +101,6 @@ export class VaultManager {
         secretCount,
         groupCount,
         lastAccessed: null,
-        remembered,
       });
     }
     return summaries;
@@ -172,23 +168,8 @@ export class VaultManager {
       unlinkSync(vaultFile);
     }
 
-    const passwordFile = this.getPasswordFilePath(name);
-    if (existsSync(passwordFile)) {
-      unlinkSync(passwordFile);
-    }
-
     this.vaults.delete(name);
     this.logger.info({ vault: name }, 'vault deleted');
-  }
-
-  /**
-   * Returns the password file path for a given vault name.
-   *
-   * @param name - Vault name.
-   * @returns Absolute path to the password file.
-   */
-  getPasswordFilePath(name: string): string {
-    return join(this.vaultsDir, `.secrets-password-${name}`);
   }
 
   /**

@@ -93,58 +93,6 @@ function createPasswordField(
 }
 
 /**
- * Creates a toggle switch element.
- *
- * @param id - Unique identifier for the toggle.
- * @param labelText - Label displayed next to the toggle.
- * @param defaultValue - Initial toggle state.
- * @returns An object with the wrapper element and a getter for the current state.
- */
-function createToggle(
-  id: string,
-  labelText: string,
-  defaultValue: boolean,
-): { wrapper: HTMLElement; getValue: () => boolean } {
-  let active = defaultValue;
-
-  const wrapper = document.createElement("div");
-  wrapper.className = `toggle${active ? " toggle--active" : ""}`;
-  wrapper.setAttribute("role", "switch");
-  wrapper.setAttribute("aria-checked", String(active));
-  wrapper.setAttribute("aria-label", labelText);
-  wrapper.setAttribute("tabindex", "0");
-
-  const track = document.createElement("div");
-  track.className = "toggle__track";
-
-  const thumb = document.createElement("div");
-  thumb.className = "toggle__thumb";
-  track.appendChild(thumb);
-
-  const label = document.createElement("span");
-  label.className = "toggle__label";
-  label.textContent = labelText;
-
-  wrapper.append(track, label);
-
-  const doToggle = (): void => {
-    active = !active;
-    wrapper.classList.toggle("toggle--active", active);
-    wrapper.setAttribute("aria-checked", String(active));
-  };
-
-  wrapper.addEventListener("click", doToggle);
-  wrapper.addEventListener("keydown", (e: KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      doToggle();
-    }
-  });
-
-  return { wrapper, getValue: () => active };
-}
-
-/**
  * Parses a tkr-secrets:// recovery URI and extracts the hex key.
  *
  * @param uri - The full URI string from a QR code scan.
@@ -643,8 +591,6 @@ export function renderRecover(container: HTMLElement, options: RecoverScreenOpti
     "Confirm new password",
   );
 
-  const remember = createToggle("recover-remember", "Remember password on this device", false);
-
   // Info note
   const infoNote = document.createElement("div");
   infoNote.style.cssText = [
@@ -660,7 +606,6 @@ export function renderRecover(container: HTMLElement, options: RecoverScreenOpti
   passwordSection.append(
     newPassword.group,
     confirmPassword.group,
-    remember.wrapper,
     infoNote,
   );
 
@@ -813,7 +758,6 @@ export function renderRecover(container: HTMLElement, options: RecoverScreenOpti
         {
           recoveryKey: recoveryKeyValue,
           newPassword: newPassword.input.value,
-          remember: remember.getValue(),
         },
       );
 

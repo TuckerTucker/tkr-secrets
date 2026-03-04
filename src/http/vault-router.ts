@@ -12,7 +12,6 @@ import type { VaultManager } from '../vault-manager.js';
 import type { ImportStore } from '../import.js';
 import type { SecretsStore } from '../store.js';
 import { validateVaultName } from '../vault-manager.js';
-import { writePasswordFile, deletePasswordFile, isPasswordRemembered } from '../password-file.js';
 import { buildRecoveryKeyMaterial, parseRecoveryKeyInput } from '../recovery.js';
 import { listGroups, createGroup, updateGroup, deleteGroup, reorder, onSecretCreated, onSecretDeleted } from '../groups.js';
 import { parseDotEnv, buildImportPreview, applyImport } from '../import.js';
@@ -153,8 +152,6 @@ function parseRoute(method: string, path: string): ParsedRoute | null {
     if (sub === 'status' && method === 'GET') return { handler: 'vaultStatus', params: { name } };
     if (sub === 'unlock' && method === 'POST') return { handler: 'unlock', params: { name } };
     if (sub === 'lock' && method === 'POST') return { handler: 'lock', params: { name } };
-    if (sub === 'remember' && method === 'POST') return { handler: 'remember', params: { name } };
-    if (sub === 'remember' && method === 'DELETE') return { handler: 'forgetPassword', params: { name } };
     if (sub === 'change-password' && method === 'POST') return { handler: 'changePassword', params: { name } };
     if (sub === 'recover' && method === 'POST') return { handler: 'recover', params: { name } };
     if (sub === 'secrets' && method === 'GET') return { handler: 'listSecrets', params: { name } };
@@ -233,14 +230,11 @@ export function createVaultRouter(deps: VaultRouterDeps): VaultRouter {
       }
 
       case 'createVault': {
-        const body = await req.json() as { name?: string; password?: string; remember?: boolean };
+        const body = await req.json() as { name?: string; password?: string };
         if (!body.name) return fail('name required');
         if (!body.password) return fail('password required');
         validateVaultName(body.name);
         const { recoveryKey } = await vaultManager.create(body.name, body.password);
-        if (body.remember) {
-          await writePasswordFile(vaultManager.getPasswordFilePath(body.name), body.password);
-        }
         const material = await buildRecoveryKeyMaterial(body.name, recoveryKey);
         return ok({ name: body.name, recoveryKey: material });
       }
@@ -255,13 +249,11 @@ export function createVaultRouter(deps: VaultRouterDeps): VaultRouter {
         const { name } = params;
         const store = getStore(vaultManager, name);
         const status = await store.status();
-        const remembered = await isPasswordRemembered(vaultManager.getPasswordFilePath(name));
         return ok({
           name,
           ...status,
           secretCount: store.isUnlocked ? store.getSecretCount() : 0,
           groupCount: store.isUnlocked ? store.getGroupCount() : 0,
-          remembered,
           version: 2,
         });
       }
@@ -269,12 +261,9 @@ export function createVaultRouter(deps: VaultRouterDeps): VaultRouter {
       case 'unlock': {
         const { name } = params;
         const store = getStore(vaultManager, name);
-        const body = await req.json() as { password?: string; remember?: boolean };
+        const body = await req.json() as { password?: string };
         if (!body.password) return fail('password required');
         await store.unlock(body.password);
-        if (body.remember) {
-          await writePasswordFile(vaultManager.getPasswordFilePath(name), body.password);
-        }
         return ok({
           secretCount: store.getSecretCount(),
           groupCount: store.getGroupCount(),
@@ -288,46 +277,24 @@ export function createVaultRouter(deps: VaultRouterDeps): VaultRouter {
         return ok({});
       }
 
-      case 'remember': {
-        const { name } = params;
-        getStore(vaultManager, name); // verify exists
-        const body = await req.json() as { password?: string };
-        if (!body.password) return fail('password required');
-        await writePasswordFile(vaultManager.getPasswordFilePath(name), body.password);
-        return ok({});
-      }
-
-      case 'forgetPassword': {
-        const { name } = params;
-        getStore(vaultManager, name); // verify exists
-        deletePasswordFile(vaultManager.getPasswordFilePath(name));
-        return ok({});
-      }
-
       case 'changePassword': {
         const { name } = params;
         const store = getStore(vaultManager, name);
-        const body = await req.json() as { currentPassword?: string; newPassword?: string; remember?: boolean };
+        const body = await req.json() as { currentPassword?: string; newPassword?: string };
         if (!body.currentPassword) return fail('currentPassword required');
         if (!body.newPassword) return fail('newPassword required');
         await store.changePassword(body.currentPassword, body.newPassword);
-        if (body.remember) {
-          await writePasswordFile(vaultManager.getPasswordFilePath(name), body.newPassword);
-        }
         return ok({});
       }
 
       case 'recover': {
         const { name } = params;
         const store = getStore(vaultManager, name);
-        const body = await req.json() as { recoveryKey?: string; newPassword?: string; remember?: boolean };
+        const body = await req.json() as { recoveryKey?: string; newPassword?: string };
         if (!body.recoveryKey) return fail('recoveryKey required');
         if (!body.newPassword) return fail('newPassword required');
         const rk = parseRecoveryKeyInput(body.recoveryKey);
         const newRk = await store.recover(rk, body.newPassword);
-        if (body.remember) {
-          await writePasswordFile(vaultManager.getPasswordFilePath(name), body.newPassword);
-        }
         const material = await buildRecoveryKeyMaterial(name, newRk);
         return ok({ recoveryKey: material });
       }

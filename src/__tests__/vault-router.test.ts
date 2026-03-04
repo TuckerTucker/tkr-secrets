@@ -405,18 +405,6 @@ describe('vault-router', () => {
     expect(body.error).toBe('import expired or not found');
   });
 
-  // --- Remember / Forget ---
-
-  test('POST remember and DELETE remember', async () => {
-    await h.router.handle(req('POST', '/api/vaults', { name: 'myapp', password: PASSWORD }));
-
-    const remRes = await h.router.handle(req('POST', '/api/vaults/myapp/remember', { password: PASSWORD }));
-    expect(remRes.status).toBe(200);
-
-    const forgetRes = await h.router.handle(req('DELETE', '/api/vaults/myapp/remember'));
-    expect(forgetRes.status).toBe(200);
-  });
-
   // --- 404 for unknown routes ---
 
   test('unknown route returns 404', async () => {
