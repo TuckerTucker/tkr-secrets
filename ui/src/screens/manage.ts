@@ -9,6 +9,7 @@
  */
 
 import { api, ApiError } from "../api.js";
+import { ICON_LOCK, ICON_EYE, ICON_EYE_OFF, ICON_TRASH, ICON_ARROW_LEFT, setIcon } from "../icons.js";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -107,6 +108,9 @@ let expandedGroups: Set<string> = new Set();
 /** Whether the add-secret form is open. */
 let addFormOpen = false;
 
+/** Secret currently being edited inline (null = none). */
+let editingSecret: string | null = null;
+
 /** Pending delete secret name (progressive disclosure). */
 let pendingDeleteSecret: string | null = null;
 
@@ -184,7 +188,7 @@ function createHeader(opts: ManageScreenOptions): HTMLElement {
   const backBtn = document.createElement("button");
   backBtn.type = "button";
   backBtn.className = "btn btn--secondary";
-  backBtn.textContent = "\u2190";
+  setIcon(backBtn, ICON_ARROW_LEFT);
   backBtn.setAttribute("aria-label", "Back to vault picker");
   backBtn.addEventListener("click", () => opts.onBack());
 
@@ -207,7 +211,8 @@ function createHeader(opts: ManageScreenOptions): HTMLElement {
   const lockBtn = document.createElement("button");
   lockBtn.type = "button";
   lockBtn.className = "btn btn--secondary";
-  lockBtn.textContent = "\u{1F512} Lock";
+  setIcon(lockBtn, ICON_LOCK);
+  lockBtn.appendChild(document.createTextNode(" Lock"));
   lockBtn.setAttribute("aria-label", "Lock vault");
   lockBtn.addEventListener("click", async () => {
     try {
@@ -343,13 +348,13 @@ function createAddSecretForm(): HTMLElement | null {
   valueToggle.type = "button";
   valueToggle.className = "input-wrapper__toggle";
   valueToggle.setAttribute("aria-label", "Toggle value visibility");
-  valueToggle.textContent = "\u{1F441}";
+  setIcon(valueToggle, ICON_EYE);
 
   let valueVisible = false;
   valueToggle.addEventListener("click", () => {
     valueVisible = !valueVisible;
     valueInput.type = valueVisible ? "text" : "password";
-    valueToggle.textContent = valueVisible ? "\u{1F441}\u{200D}\u{1F5E8}" : "\u{1F441}";
+    setIcon(valueToggle, valueVisible ? ICON_EYE_OFF : ICON_EYE, valueVisible ? "Hide value" : "Show value");
   });
 
   valueWrapper.append(valueInput, valueToggle);
@@ -501,67 +506,142 @@ function createSecretRow(secretName: string, indented: boolean): HTMLElement {
   name.className = "manage-secret-name";
   name.textContent = secretName;
 
-  // Value display
-  const value = document.createElement("span");
-  if (isRevealed) {
+  // Value display / inline edit
+  const isEditing = editingSecret === secretName;
+  let valueEl: HTMLElement;
+
+  if (isEditing) {
+    // Inline edit mode
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "manage-secret-input";
+    input.value = revealedSecrets.get(secretName) ?? "";
+    input.setAttribute("aria-label", `Edit value for ${secretName}`);
+
+    const saveEdit = async (): Promise<void> => {
+      const newValue = input.value;
+      try {
+        await api<{ name: string; created: boolean }>(
+          "POST",
+          `${vaultPath()}/secrets/${encodeURIComponent(secretName)}`,
+          { value: newValue },
+        );
+        revealedSecrets.set(secretName, newValue);
+        editingSecret = null;
+        refreshContent();
+      } catch {
+        // Save failure — stay in edit mode
+      }
+    };
+
+    const cancelEdit = (): void => {
+      editingSecret = null;
+      refreshContent();
+    };
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveEdit();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        cancelEdit();
+      }
+    });
+
+    input.addEventListener("blur", () => {
+      // Small delay to allow button clicks to register before blur fires
+      setTimeout(() => {
+        if (editingSecret === secretName) {
+          saveEdit();
+        }
+      }, 150);
+    });
+
+    // Auto-focus after render
+    requestAnimationFrame(() => {
+      input.focus();
+      input.select();
+    });
+
+    valueEl = input;
+  } else if (isRevealed) {
+    const value = document.createElement("span");
     value.className = "manage-secret-value manage-secret-value--revealed";
     value.textContent = revealedSecrets.get(secretName) ?? "";
+    valueEl = value;
   } else {
+    const value = document.createElement("span");
     value.className = "manage-secret-value";
     value.textContent = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+    valueEl = value;
   }
 
   // Actions
   const actions = document.createElement("div");
   actions.style.cssText = "display:flex;gap:var(--space-1);align-items:center;margin-left:auto;flex-shrink:0";
 
-  // Reveal/hide button
-  const revealBtn = document.createElement("button");
-  revealBtn.type = "button";
-  revealBtn.className = "btn btn--secondary";
-  revealBtn.style.cssText = "padding:var(--space-1) var(--space-2);font-size:var(--font-size-sm)";
-  revealBtn.textContent = isRevealed ? "\u{1F441}\u{200D}\u{1F5E8}" : "\u{1F441}";
-  revealBtn.setAttribute("aria-label", isRevealed ? `Hide ${secretName}` : `Reveal ${secretName}`);
-  revealBtn.addEventListener("click", async () => {
-    if (revealedSecrets.has(secretName)) {
-      revealedSecrets.delete(secretName);
-      refreshContent();
-    } else {
-      try {
-        const result = await api<SecretValueResponse>(
-          "GET",
-          `${vaultPath()}/secrets/${encodeURIComponent(secretName)}`,
-        );
-        revealedSecrets.set(secretName, result.value);
+  if (!isEditing) {
+    // Reveal/hide button
+    const revealBtn = document.createElement("button");
+    revealBtn.type = "button";
+    revealBtn.className = "btn btn--secondary";
+    revealBtn.style.cssText = "padding:var(--space-1) var(--space-2);font-size:var(--font-size-sm)";
+    setIcon(revealBtn, isRevealed ? ICON_EYE_OFF : ICON_EYE);
+    revealBtn.setAttribute("aria-label", isRevealed ? `Hide ${secretName}` : `Reveal ${secretName}`);
+    revealBtn.addEventListener("click", async () => {
+      if (revealedSecrets.has(secretName)) {
+        revealedSecrets.delete(secretName);
         refreshContent();
-      } catch {
-        // Reveal failure — silent
-      }
-    }
-  });
-  actions.appendChild(revealBtn);
-
-  // Copy button (only when revealed)
-  if (isRevealed) {
-    const copyBtn = document.createElement("button");
-    copyBtn.type = "button";
-    copyBtn.className = "btn btn--secondary";
-    copyBtn.style.cssText = "padding:var(--space-1) var(--space-2);font-size:var(--font-size-sm)";
-    copyBtn.textContent = "Copy";
-    copyBtn.setAttribute("aria-label", `Copy ${secretName} to clipboard`);
-    copyBtn.addEventListener("click", () => {
-      const val = revealedSecrets.get(secretName);
-      if (val) {
-        navigator.clipboard.writeText(val).then(() => {
-          const original = copyBtn.textContent;
-          copyBtn.textContent = "Copied";
-          setTimeout(() => {
-            copyBtn.textContent = original;
-          }, 2000);
-        });
+      } else {
+        try {
+          const result = await api<SecretValueResponse>(
+            "GET",
+            `${vaultPath()}/secrets/${encodeURIComponent(secretName)}`,
+          );
+          revealedSecrets.set(secretName, result.value);
+          refreshContent();
+        } catch {
+          // Reveal failure — silent
+        }
       }
     });
-    actions.appendChild(copyBtn);
+    actions.appendChild(revealBtn);
+
+    // Edit + Copy buttons (only when revealed)
+    if (isRevealed) {
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "btn btn--secondary";
+      editBtn.style.cssText = "padding:var(--space-1) var(--space-2);font-size:var(--font-size-sm)";
+      editBtn.textContent = "Edit";
+      editBtn.setAttribute("aria-label", `Edit ${secretName}`);
+      editBtn.addEventListener("click", () => {
+        editingSecret = secretName;
+        refreshContent();
+      });
+      actions.appendChild(editBtn);
+
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "btn btn--secondary";
+      copyBtn.style.cssText = "padding:var(--space-1) var(--space-2);font-size:var(--font-size-sm)";
+      copyBtn.textContent = "Copy";
+      copyBtn.setAttribute("aria-label", `Copy ${secretName} to clipboard`);
+      copyBtn.addEventListener("click", () => {
+        const val = revealedSecrets.get(secretName);
+        if (val) {
+          navigator.clipboard.writeText(val).then(() => {
+            const original = copyBtn.textContent;
+            copyBtn.textContent = "Copied";
+            setTimeout(() => {
+              copyBtn.textContent = original;
+            }, 2000);
+          });
+        }
+      });
+      actions.appendChild(copyBtn);
+    }
   }
 
   // Delete button (progressive disclosure)
@@ -590,7 +670,7 @@ function createSecretRow(secretName: string, indented: boolean): HTMLElement {
       }
     });
   } else {
-    deleteBtn.textContent = "\u{1F5D1}";
+    setIcon(deleteBtn, ICON_TRASH);
     deleteBtn.setAttribute("aria-label", `Delete ${secretName}`);
     deleteBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -613,7 +693,7 @@ function createSecretRow(secretName: string, indented: boolean): HTMLElement {
     row.classList.remove("manage-secret-row--dragging");
   });
 
-  row.append(handle, name, value, actions);
+  row.append(handle, name, valueEl, actions);
   return row;
 }
 
@@ -1231,12 +1311,12 @@ function createSettingsSection(status: VaultStatus, opts: ManageScreenOptions): 
     const tog = document.createElement("button");
     tog.type = "button";
     tog.className = "input-wrapper__toggle";
-    tog.textContent = "\u{1F441}";
+    setIcon(tog, ICON_EYE);
     let vis = false;
     tog.addEventListener("click", () => {
       vis = !vis;
       inp.type = vis ? "text" : "password";
-      tog.textContent = vis ? "\u{1F441}\u{200D}\u{1F5E8}" : "\u{1F441}";
+      setIcon(tog, vis ? ICON_EYE_OFF : ICON_EYE, vis ? "Hide password" : "Show password");
     });
     wrap.append(inp, tog);
     const err = document.createElement("div");
@@ -1466,6 +1546,7 @@ export function renderManage(container: HTMLElement, options: ManageScreenOption
 
   // Reset state
   revealedSecrets = new Map();
+  editingSecret = null;
   expandedGroups = new Set();
   addFormOpen = false;
   pendingDeleteSecret = null;
@@ -1485,9 +1566,14 @@ export function renderManage(container: HTMLElement, options: ManageScreenOption
 
   // Reset pending delete on escape (for secret rows)
   const handleEscape = (e: KeyboardEvent): void => {
-    if (e.key === "Escape" && pendingDeleteSecret) {
-      pendingDeleteSecret = null;
-      refreshContent();
+    if (e.key === "Escape") {
+      if (editingSecret) {
+        editingSecret = null;
+        refreshContent();
+      } else if (pendingDeleteSecret) {
+        pendingDeleteSecret = null;
+        refreshContent();
+      }
     }
   };
   document.addEventListener("keydown", handleEscape);
@@ -1505,6 +1591,7 @@ export function destroyManage(): void {
   currentOptions = null;
   progressBarFill = null;
   revealedSecrets = new Map();
+  editingSecret = null;
   expandedGroups = new Set();
   cachedGroups = [];
   cachedStatus = null;

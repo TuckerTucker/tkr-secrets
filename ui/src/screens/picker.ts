@@ -8,6 +8,7 @@
  */
 
 import { api } from "../api.js";
+import { ICON_LOCK, ICON_UNLOCK, setIcon } from "../icons.js";
 
 /** Shape of a single vault returned by GET /api/vaults. */
 export interface VaultSummary {
@@ -78,10 +79,10 @@ function createVaultCard(vault: VaultSummary, opts: PickerOptions): HTMLElement 
 
   // Lock icon
   const icon = document.createElement("span");
-  icon.style.fontSize = "var(--font-size-xl)";
   icon.style.marginBottom = "var(--space-2)";
-  icon.textContent = vault.unlocked ? "\u{1F513}" : "\u{1F512}";
-  icon.setAttribute("aria-hidden", "true");
+  icon.style.display = "flex";
+  icon.style.justifyContent = "center";
+  setIcon(icon, vault.unlocked ? ICON_UNLOCK : ICON_LOCK);
 
   // Name
   const name = document.createElement("div");
@@ -265,7 +266,7 @@ function updateCardsInPlace(vaults: VaultSummary[]): void {
     const children = card.children;
     // children[0] = icon, [1] = name, [2] = badge, [3] = counts, [4] = accessed
     if (children[0]) {
-      (children[0] as HTMLElement).textContent = vault.unlocked ? "\u{1F513}" : "\u{1F512}";
+      setIcon(children[0] as HTMLElement, vault.unlocked ? ICON_UNLOCK : ICON_LOCK);
     }
     if (children[2]) {
       const badge = children[2] as HTMLElement;

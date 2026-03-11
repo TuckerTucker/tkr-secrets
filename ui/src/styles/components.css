@@ -314,7 +314,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  max-width: 1200px;
+  max-width: 1440px;
   width: 100%;
   margin-inline: auto;
   padding: var(--space-4);
@@ -448,6 +448,19 @@
 .manage-secret-value--revealed {
   color: var(--color-text-primary);
   font-family: var(--font-family-mono);
+}
+
+.manage-secret-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background: var(--color-bg-page);
+  border: 2px solid var(--color-border-focus);
+  border-radius: var(--radius-sm);
+  outline: none;
 }
 
 .manage-drag-handle {

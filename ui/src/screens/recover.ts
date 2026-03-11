@@ -10,6 +10,7 @@
  */
 
 import { api, ApiError } from "../api.js";
+import { ICON_EYE, ICON_EYE_OFF, ICON_ARROW_LEFT, setIcon } from "../icons.js";
 
 /** Options for rendering the recover screen. */
 export interface RecoverScreenOptions {
@@ -72,14 +73,13 @@ function createPasswordField(
   toggle.type = "button";
   toggle.className = "input-wrapper__toggle";
   toggle.setAttribute("aria-label", "Toggle password visibility");
-  toggle.textContent = "\u{1F441}";
+  setIcon(toggle, ICON_EYE);
 
   let visible = false;
   toggle.addEventListener("click", () => {
     visible = !visible;
     input.type = visible ? "text" : "password";
-    toggle.textContent = visible ? "\u{1F441}\u{200D}\u{1F5E8}" : "\u{1F441}";
-    toggle.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+    setIcon(toggle, visible ? ICON_EYE_OFF : ICON_EYE, visible ? "Hide password" : "Show password");
   });
 
   wrapper.append(input, toggle);
@@ -185,7 +185,7 @@ export function renderRecover(container: HTMLElement, options: RecoverScreenOpti
   const backBtn = document.createElement("button");
   backBtn.type = "button";
   backBtn.className = "btn btn--secondary";
-  backBtn.textContent = "\u2190";
+  setIcon(backBtn, ICON_ARROW_LEFT);
   backBtn.setAttribute("aria-label", "Back to unlock screen");
   backBtn.addEventListener("click", () => options.onBack());
 

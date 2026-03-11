@@ -11,6 +11,8 @@
  * @module screens/recovery-key
  */
 
+import { ICON_SHIELD, setIcon } from "../icons.js";
+
 /**
  * Options passed to the recovery key screen from the calling context.
  */
@@ -102,8 +104,9 @@ function createHeader(): HTMLElement {
   ].join(";");
 
   const shield = document.createElement("span");
-  shield.setAttribute("aria-hidden", "true");
-  shield.textContent = "\u{1F6E1}\uFE0F";
+  shield.style.display = "inline-flex";
+  shield.style.alignItems = "center";
+  setIcon(shield, ICON_SHIELD);
   left.appendChild(shield);
 
   const title = document.createElement("span");
