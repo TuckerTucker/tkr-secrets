@@ -106,6 +106,7 @@ tkr-secrets/
 │       ├── router.ts         # SPA router
 │       ├── api.ts            # Fetch wrapper
 │       ├── theme.ts          # Theme system
+│       ├── icons.ts          # Inline SVG icons
 │       ├── components/
 │       │   └── theme-toggle.ts
 │       └── screens/

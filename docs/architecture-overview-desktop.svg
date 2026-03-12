@@ -99,7 +99,7 @@
     <text x="20" y="212" class="label">recovery.ts    (BIP39/QR/key gen)</text>
     <text x="20" y="230" class="label">groups.ts      (group/order logic)</text>
     <text x="20" y="248" class="label">import.ts      (.env parser)</text>
-    <text x="20" y="266" class="label">password-file.ts (0o600 perms)</text>
+    <text x="20" y="266" class="label">keychain.ts    (macOS Keychain)</text>
     <text x="20" y="284" class="label">types.ts       (interfaces)</text>
   </g>
 
@@ -109,7 +109,7 @@
     <rect x="0" y="-32" width="72" height="64" rx="6" fill="#FFFFFF" stroke="#BDBDBD" stroke-width="1.5" stroke-dasharray="4,3"/>
     <text x="36" y="-10" text-anchor="middle" class="text-secondary" font-size="11" font-weight="500">File</text>
     <text x="36" y="6" text-anchor="middle" class="text-secondary" font-size="11" font-weight="500">System</text>
-    <text x="36" y="24" text-anchor="middle" class="label">.vault .pass</text>
+    <text x="36" y="24" text-anchor="middle" class="label">.vault .keychain</text>
   </g>
 
   <!-- Legend -->

@@ -106,7 +106,7 @@ The UI supports light and dark themes via CSS custom properties.
 | Behavior | Details |
 |----------|---------|
 | Default | Follows `prefers-color-scheme` system setting |
-| Toggle | Sun/moon icon in the footer |
+| Toggle | Sun/moon inline SVG icon (from `ui/src/icons.ts`) in the footer |
 | Persistence | `localStorage` key `tkr-theme` |
 | Implementation | CSS custom properties set on `:root` |
 
